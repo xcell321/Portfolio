@@ -9,7 +9,7 @@
   <div class="hero-meta">
     <div class="pills">
       <span class="pill"><span class="dot"></span><?=e(token('hero.badge'))?> <?=icon('arrow',14)?></span>
-      <button class="pill like<?=!empty($liked_now)?' liked':''?>" id="likePillTop" onclick="like(event)" title="Like" aria-pressed="<?=!empty($liked_now)?'true':'false'?>"><?=icon('heart',15)?> <b id="likeLabelTop"><?=!empty($liked_now)?'You liked this':'Like this portfolio'?></b> <span id="likeNumTop"><?=$like_total?></span></button>
+      <button class="pill like<?=!empty($liked_now)?' liked':''?>" id="likePillTop" onclick="like(event)" title="Like" aria-label="<?=!empty($liked_now)?'Unlike':'Like'?> this portfolio" aria-pressed="<?=!empty($liked_now)?'true':'false'?>"><?=icon('heart',14)?> <span id="likeLabelTop"><?=!empty($liked_now)?'You liked this':'Like this portfolio'?></span> <span class="like-num" id="likeNumWrap"><span id="likeNumTop"><?=$like_total?></span></span></button>
     </div>
     <div class="meta-mono"><?=e(strtoupper(token('location')))?> &nbsp;·&nbsp; <span id="clock">--:--</span> &nbsp;·&nbsp; BUILDING THINGS <?=icon('spark',13)?></div>
   </div>

@@ -25,10 +25,11 @@ function paintSwatches(){
     b.onclick=e=>{e.stopPropagation();setAccent(n,h)};
     box.appendChild(b);
   });
-  const saved=ACCENTS.find(a=>a[1]===cur);
+  const saved=ACCENTS.find(a=>a[1].toLowerCase()===cur);
   if(saved){document.getElementById('themeName').textContent=saved[0]}
 }
 function setAccent(n,h){
+  h=(h||'#d4fd73').toLowerCase();
   document.documentElement.style.setProperty('--acc',h);
   try{localStorage.setItem('acc',h)}catch(e){}
   document.dispatchEvent(new CustomEvent('accentchange',{detail:h}));
@@ -37,8 +38,9 @@ function setAccent(n,h){
   toast(n+' · saved for your next visit');
 }
 function paintSwatchesRefresh(h){
+  h=(h||'').toLowerCase();
   document.querySelectorAll('#swatches .sw').forEach(s=>{
-    const sh=s.style.background,match=sh===h||rgb2hex(sh)===h;
+    const sh=s.style.background,match=sh.toLowerCase()===h||rgb2hex(sh).toLowerCase()===h;
     s.classList.toggle('on',match);
     s.innerHTML=match?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#141205" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>':'';
   });
@@ -46,7 +48,17 @@ function paintSwatchesRefresh(h){
 function rgb2hex(v){const m=v.match(/\d+/g);if(!m||m.length<3)return v;return'#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join('')}
 function toggleTheme(e){if(e)e.stopPropagation();paintSwatches();document.getElementById('themePop').classList.toggle('open')}
 document.addEventListener('click',e=>{const p=document.getElementById('themePop');if(p&&p.classList.contains('open')&&!e.target.closest('.theme-wrap'))p.classList.remove('open')});
-(function(){try{const h=localStorage.getItem('acc');if(h)document.documentElement.style.setProperty('--acc',h)}catch(e){}})();
+// init sa load: kung unsay naka-select nga color, mao ra gyud nay mogawas inig refresh —
+// validate + apply + update sa picker label dayon (dili na maghuwat ug open sa picker)
+(function(){
+  try{
+    let h=(localStorage.getItem('acc')||'#d4fd73').toLowerCase();
+    if(!ACCENTS.some(a=>a[1].toLowerCase()===h)){h='#d4fd73';try{localStorage.setItem('acc',h)}catch(e){}}
+    document.documentElement.style.setProperty('--acc',h);
+    const found=ACCENTS.find(a=>a[1].toLowerCase()===h);
+    if(found){const tn=document.getElementById('themeName');if(tn)tn.textContent=found[0]}
+  }catch(e){}
+})();
 // nav mobile
 function toggleNav(){document.getElementById('navLinks').classList.toggle('open')}
 // ---- active-section nav pill — mikedev.site exact ----
@@ -128,70 +140,91 @@ document.querySelectorAll('.proj').forEach(c=>{
 // command palette Ctrl+K
 addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();document.getElementById('pal').classList.toggle('open')}});
 document.getElementById('pal')?.addEventListener('click',e=>{if(e.target.id==='pal')e.target.classList.remove('open')});
-// like - 1 per person (toggle like/unlike, server ang source of truth)
+// like - mikedev.site exact port (chunk 993-…): heart spring 500/15 (keyed remount),
+// count roll y ±100% .3s, canvas confetti count 40 gikan sa button center inig like,
+// liked = border accent/40 + bg accent/10 + text accent, busy = opacity .6
 function paintLiked(liked){
-  document.getElementById('likePillTop')?.classList.toggle('liked',liked);
-  document.getElementById('likePillTop')?.setAttribute('aria-pressed',liked?'true':'false');
+  const b=document.getElementById('likePillTop');
+  if(b){b.classList.toggle('liked',liked);b.setAttribute('aria-pressed',liked?'true':'false');b.setAttribute('aria-label',(liked?'Unlike':'Like')+' this portfolio')}
   const lt=document.getElementById('likeLabelTop');if(lt)lt.textContent=liked?'You liked this':'Like this portfolio';
   try{liked?localStorage.setItem('liked','1'):localStorage.removeItem('liked')}catch(e){}
 }
 function paintTotal(total){
-  const ids=['likeNumTop'].map(id=>document.getElementById(id)).filter(Boolean);
-  ids.forEach(n=>n.textContent=total);
+  const n=document.getElementById('likeNumTop');if(n)n.textContent=total;
 }
-// smooth count up/down sa number
+// count roll — daan mo-slide up-out, bag-o mo-slide up-in (.3s, tabular-nums)
 function animTotal(to){
-  ['likeNumTop'].map(id=>document.getElementById(id)).filter(Boolean).forEach(el=>{
-    const from=parseInt(el.textContent||'0',10)||0;
-    if(from===to){el.textContent=to;return}
-    const t0=performance.now(),dur=550;
-    requestAnimationFrame(function step(t){
-      const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);
-      el.textContent=Math.round(from+(to-from)*e);
-      if(k<1)requestAnimationFrame(step);
-    });
-  });
+  const wrap=document.getElementById('likeNumWrap');if(!wrap)return;
+  const cur=wrap.querySelector('span');if(!cur)return;
+  const from=parseInt(cur.textContent||'0',10)||0;
+  if(from===to){cur.textContent=to;return}
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){cur.textContent=to;return}
+  const nxt=document.createElement('span');nxt.id='likeNumTop';nxt.textContent=to;nxt.className='roll-new';
+  cur.removeAttribute('id');cur.className='roll-old';wrap.append(nxt);
+  setTimeout(()=>{cur.remove();nxt.className=''},320);
 }
-// heart pop + particle burst gikan sa button (same accent color ra)
-function likeBurst(withParticles){
-  ['likePillTop'].forEach(id=>{
-    const b=document.getElementById(id);if(!b)return;
-    b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
-    setTimeout(()=>b.classList.remove('pop'),500);
-    if(!withParticles)return;
-    const r=b.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
-    for(let i=0;i<8;i++){
-      const p=document.createElement('span');p.className='like-pt';p.textContent='♥';
-      const ang=(Math.PI*2*i/8)+Math.random()*.5,dist=40+Math.random()*55;
-      p.style.left=cx+'px';p.style.top=cy+'px';
-      p.style.fontSize=(10+Math.random()*10)+'px';
-      p.style.setProperty('--dx',(Math.cos(ang)*dist).toFixed(1)+'px');
-      p.style.setProperty('--dy',(-(Math.abs(Math.sin(ang))*dist)-35).toFixed(1)+'px');
-      p.style.setProperty('--rot',((Math.random()*60)-30).toFixed(0)+'deg');
-      document.body.append(p);setTimeout(()=>p.remove(),950);
-    }
+// heart spring retrigger — parehas sa framer keyed remount (scale .4 → 1, stiffness 500 damping 15)
+function heartSpring(){
+  const b=document.getElementById('likePillTop');if(!b)return;
+  b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
+  setTimeout(()=>b.classList.remove('pop'),550);
+}
+// canvas confetti gikan sa button center — mikedev engine exact (speed 4+9r, gravity .28, count param)
+function mikeConfetti(x,y,count){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  let hex=(getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#d4fd73').replace('#','');
+  if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const base=[parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)];
+  const mix=(k,to)=>'rgb('+base.map(v=>Math.round(v+(to-v)*k)).join(',')+')';
+  const pal=['rgb('+base.join(',')+')',mix(.2,0),mix(.4,255),'#f5f5f4','#a8a29e'];
+  const cv=document.createElement('canvas');
+  cv.setAttribute('aria-hidden','true');
+  Object.assign(cv.style,{position:'fixed',inset:'0',width:'100vw',height:'100vh',pointerEvents:'none',zIndex:'10000'});
+  document.body.appendChild(cv);
+  const ctx=cv.getContext('2d');
+  if(!ctx){cv.remove();return}
+  const dpr=Math.min(window.devicePixelRatio||1,2),W=window.innerWidth,H=window.innerHeight;
+  cv.width=W*dpr;cv.height=H*dpr;ctx.scale(dpr,dpr);
+  const n=count||40;
+  const parts=Array.from({length:n},()=>{
+    const ang=Math.random()*Math.PI*2,sp=4+9*Math.random();
+    return{x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp-6,size:5+6*Math.random(),rot:Math.random()*Math.PI,vr:(Math.random()-.5)*.4,color:pal[Math.random()*pal.length|0],round:Math.random()<.3};
   });
+  let raf=0;
+  const g=()=>{
+    ctx.clearRect(0,0,W,H);
+    let alive=0;
+    for(const p of parts){
+      p.vy+=.28;p.vx*=.985;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;
+      if(p.y<H+20)alive++;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.color;
+      if(p.round){ctx.beginPath();ctx.arc(0,0,p.size/2.4,0,2*Math.PI);ctx.fill()}
+      else ctx.fillRect(-p.size/2,-p.size/4,p.size,p.size/2);
+      ctx.restore();
+    }
+    if(alive)raf=requestAnimationFrame(g);else cv.remove();
+  };
+  raf=requestAnimationFrame(g);
+  setTimeout(()=>{cancelAnimationFrame(raf);cv.remove()},6000);
 }
 let liking=false;
 async function like(ev){
   if(liking)return;liking=true;
-  if(ev&&ev.clientX!==undefined)burstConfetti(ev.clientX,ev.clientY,70);
-  else{const b=document.getElementById('likePillTop');if(b){const r=b.getBoundingClientRect();burstConfetti(r.left+r.width/2,r.top+r.height/2,70)}}
+  const btn=document.getElementById('likePillTop');
+  if(btn)btn.classList.add('busy');
   try{
     const r=await fetch('api_like.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'toggle'})});
     const j=await r.json();
     paintLiked(!!j.liked);
-    if(j.liked){
-      animTotal(j.total);likeBurst(true);
-    }else{
-      animTotal(j.total);likeBurst(false);
-    }
+    animTotal(j.total);
+    heartSpring();
+    if(j.liked&&btn){const t=btn.getBoundingClientRect();mikeConfetti(t.left+t.width/2,t.top+t.height/2,40)}
   }catch{
     toast('Dili ma-like karon, try balik unya.');
-  }finally{liking=false}
+  }finally{liking=false;if(btn)btn.classList.remove('busy')}
 }
-// sync liked state on load (kung ni-like na sauna, dili na pwede mu-like utro)
-(async()=>{try{const r=await fetch('api_like.php');const j=await r.json();paintTotal(j.total);paintLiked(!!j.liked)}catch{try{paintLiked(localStorage.getItem('liked')==='1')}catch(e){}}})();
+// sync liked state on load + mount spring sa heart (.4 → 1) parehas ni Mike
+(async()=>{try{const r=await fetch('api_like.php');const j=await r.json();paintTotal(j.total);paintLiked(!!j.liked);heartSpring()}catch{try{paintLiked(localStorage.getItem('liked')==='1')}catch(e){}heartSpring()}})();
 // duty flip — AUTOMATIC sa hover ra (mikeddev exact): walay click, badge kinda flips text lang
 function setDuty(on){
   const badge=document.getElementById('dutyBadge'),card=document.getElementById('photoCard');

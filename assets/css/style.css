@@ -4,22 +4,27 @@
   --r:18px; --font:'Inter',system-ui,Segoe UI,Roboto,Arial,sans-serif; --script:'Caveat',cursive; --display:'Bricolage Grotesque','Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+/* text selection — musunod sa current accent color (dili default blue), parehas ni mikedev.site */
+::selection{background:var(--acc);color:#000}
+::-moz-selection{background:var(--acc);color:#000}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hidden;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 a{color:inherit;text-decoration:none}
-.wrap{max-width:1150px;margin:0 auto;padding:0 22px}
+.wrap{max-width:72rem;margin:0 auto;padding:0 20px}
+@media(min-width:640px){.wrap{padding:0 32px}}
 /* NAV — exact clone sa mikedev.site pill navbar (h-14=56px, Inter 14px, mono 10px) */
-.site-header{position:fixed;top:0;left:0;right:0;z-index:50}
-.header-pt{padding-top:12px}
-@media(min-width:640px){.header-pt{padding-top:16px}}
-/* mikedev exact: nav pill pl-2.5 px-1.5, gap-2, h-14 rounded-full */
-.nav-in{position:relative;max-width:1024px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;height:56px;border-radius:9999px;border:1px solid transparent;background:transparent;box-shadow:none;padding:6px 6px 6px 10px;transition:background-color .5s ease,border-color .5s ease,box-shadow .5s ease}
+.site-header{position:fixed;inset-inline:0;top:0;z-index:40}
+/* mikedev exact: container-page max-w-72rem px-5/sm:px-8 + pt-3/sm:pt-4 */
+.header-pt{max-width:72rem;margin:0 auto;padding:12px 20px 0}
+@media(min-width:640px){.header-pt{padding:16px 32px 0}}
+/* mikedev exact: nav pill flex h-14 justify-between gap-2 rounded-full border px-1.5 pl-2.5 — full container width, walay kaugalingong max-width */
+.nav-in{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;height:56px;border-radius:9999px;border:1px solid transparent;background:transparent;box-shadow:none;padding:6px 6px 6px 10px;transition:background-color .5s ease,border-color .5s ease,box-shadow .5s ease}
 /* mikedev.site exact — pill lang pag scroll down: border-white/[.08], bg-[#121212]/75,
    shadow-[0_8px_30px_rgba(0,0,0,.35)], backdrop-blur-xl */
 .nav-in.scrolled{border-color:rgba(255,255,255,.08);background:rgba(18,18,18,.75);box-shadow:0 8px 30px rgba(0,0,0,.35);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
-/* mikedev logo: 32px mark (8=8px whitespace/navbar spacing) + text sm 14px semibold stone-100 */
+/* mikedev logo: wide strip mark ~36x14 inside 32px slot + text sm 14px semibold stone-100 */
 .logo{display:inline-flex;align-items:center;gap:10px;padding-right:8px;white-space:nowrap;min-width:0}
-.logo-img{height:32px;width:32px;object-fit:contain;display:block;flex:none}
+.logo-img{height:32px;width:auto;max-width:120px;object-fit:contain;object-position:left center;display:block;flex:none}
 .logo-txt{font-family:var(--font);font-size:14px;line-height:20px;font-weight:600;color:#f5f5f4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:380px){.logo-txt{display:none}}
 /* mikedev: ul flex gap-0.5 xl:gap-1, links px-3 py-1.5 sm stone-400 hover stone-100, xl px-3.5 */
@@ -164,14 +169,19 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 #toast.show{opacity:1;transform:translateX(-50%)}
 .toast-act{margin-left:10px;background:#111;color:var(--acc);border:0;border-radius:999px;padding:5px 14px;font-weight:700;cursor:pointer}
 .toast-act:hover{transform:scale(1.05)}
-/* like animation — smooth pop + burst, same color ra gihapon */
-.pill.like{transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,border-color .2s}
-.pill.like:active{transform:scale(.92)}
-.pill.like svg{transition:transform .25s cubic-bezier(.34,1.56,.64,1);transform-origin:center}
-.pill.like.pop svg{animation:heartPop .45s cubic-bezier(.34,1.56,.64,1)}
-@keyframes heartPop{0%{transform:scale(1) rotate(0)}35%{transform:scale(1.5) rotate(-10deg)}60%{transform:scale(.85) rotate(4deg)}100%{transform:scale(1) rotate(0)}}
-.like-pt{position:fixed;z-index:60;pointer-events:none;color:var(--acc);line-height:1;animation:likeFloat .9s ease-out forwards}
-@keyframes likeFloat{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,-60px))) scale(1.15) rotate(var(--rot,0deg))}}
+/* like animation — mikedev exact: heart spring 500/15 gikan .4 + active scale (tan-awa v2 rules sa ubos) */
+.pill.like{transition:transform .15s,box-shadow .2s,border-color .2s}
+.pill.like:active{transform:scale(.95)}
+.pill.like svg{transform-origin:center}
+.pill.like.pop svg{animation:heartSpring .5s cubic-bezier(.22,1,.36,1)}
+@keyframes heartSpring{0%{transform:scale(.4)}55%{transform:scale(1.18)}75%{transform:scale(.94)}100%{transform:scale(1)}}
+.like-num{position:relative;display:inline-flex;overflow:hidden;color:#a8a29e;font-variant-numeric:tabular-nums;line-height:1.2}
+.like-num>span{display:inline-block}
+.like-num .roll-old{position:absolute;inset:0;animation:rollOut .3s ease forwards}
+.like-num .roll-new{animation:rollIn .3s ease}
+@keyframes rollOut{to{transform:translateY(-100%);opacity:0}}
+@keyframes rollIn{from{transform:translateY(100%);opacity:0}}
+@media(prefers-reduced-motion:reduce){.like-num .roll-old,.like-num .roll-new{animation:none}}
 .guest{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px;font-size:14px}
 /* svg icons - vertical align */
 .btn svg,.pill svg,.icon-btn svg,.card-ic svg,.preview svg,.cert .e svg,.photo svg{flex:none;vertical-align:-3px}
@@ -186,34 +196,36 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
   .photo-wrap{margin-top:10px}
 }
 /* ===== hero v2 - mikedev layout exact: pt-28/sm:pt-32, pb-10/sm:pb-12 ===== */
-.hero{padding:7rem 0 2.5rem}
+.hero{position:relative;padding:7rem 0 2.5rem;min-height:100vh;min-height:100svh;display:flex;flex-direction:column}
 @media(min-width:640px){.hero{padding:8rem 0 3rem}}
+.hero-inner{flex:1;display:flex;flex-direction:column;width:100%}
 .hero-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:0;flex-wrap:wrap}
-.pills{display:flex;gap:10px;flex-wrap:wrap}
-.pill{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);border-radius:999px;padding:6px 14px 6px 10px;font-size:12px;line-height:1;color:rgb(212 212 212);cursor:default;transition:color .2s,border-color .2s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);border-radius:999px;padding:6px 14px 6px 10px;font-family:var(--font);font-size:12px;line-height:1;font-weight:400;color:#d6d3d1;cursor:default;transition:color .2s,border-color .2s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .pill:hover{color:#f5f5f4;border-color:color-mix(in srgb, var(--acc) 30%, transparent)}
 .pill i{font-style:normal;color:var(--acc)}
 /* mikedev exact: like pill wala'y scale sa hover (border/bg/text ra), active:scale-.95 */
-.pill.like{cursor:pointer;color:rgb(212 212 212);border-color:rgba(255,255,255,.08);gap:8px;padding:6px 12px;transition:border-color .3s,background .3s,color .3s,transform .15s}
+.pill.like{cursor:pointer;font-family:var(--font);color:#d6d3d1;border-color:rgba(255,255,255,.08);gap:8px;padding:6px 12px;transition:border-color .3s,background .3s,color .3s,transform .15s}
 .pill.like:hover{transform:none;border-color:color-mix(in srgb, var(--acc) 30%, transparent);color:#f5f5f4}
 .pill.like:active{transform:scale(.95)}
-/* heart: group-hover → accent, spring pop inig like (framer spring 500/15 ≈ overshoot curve) */
-.pill.like svg{transition:color .2s,transform .25s cubic-bezier(.34,1.56,.64,1);transform-origin:center}
+.pill.like.busy{opacity:.6;pointer-events:none}
+/* heart: group-hover → accent; inig toggle mu-spring gikan .4 (framer spring 500/15, keyed remount) */
+.pill.like svg{transition:color .2s;transform-origin:center}
 .pill.like:hover svg{color:var(--acc)}
 /* arrow hover — mikedev exact: translate(2px,-2px) diagonal lift + accent */
 .pill:not(.like) > svg:last-child{transition:transform .2s,color .2s}
 .pill:not(.like):hover > svg:last-child{transform:translate(2px,-2px);color:var(--acc)}
-.pill.like.pop svg{animation:heartPop .45s cubic-bezier(.34,1.56,.64,1)}
+.pill.like.pop svg{animation:heartSpring .5s cubic-bezier(.22,1,.36,1)}
 /* mikedev exact: status dot = 8px core + ping ring layer */
 .dot{position:relative;width:8px;height:8px;border-radius:50%;background:var(--acc);transition:background .3s ease;will-change:transform}
 .dot::before{content:'';position:absolute;inset:0;border-radius:50%;background:var(--acc);opacity:.6;animation:ping 1s cubic-bezier(0,0,.2,1) infinite;pointer-events:none}
 @keyframes ping{75%,100%{transform:scale(2);opacity:0}}
 /* mikedev meta-mono: 11px, tracking .2em, stone-500 like */
 .meta-mono{font-size:11px;letter-spacing:.2em;color:#78716c;font-family:ui-monospace,Menlo,Consolas,monospace}
-.hero-grid{display:grid;grid-template-columns:1fr;gap:5rem;padding:3rem 0;align-items:center}
+.hero-grid{display:grid;grid-template-columns:1fr;gap:5rem;padding:3rem 0;align-items:center;margin-top:auto;margin-bottom:auto}
 @media(min-width:640px){.hero-grid{padding:4rem 0}}
 @media(min-width:1024px){.hero-grid{grid-template-columns:8fr 4fr;column-gap:2rem}}
-.script{font-family:var(--script);font-size:clamp(1.5rem,3vw,2.25rem);line-height:1;color:var(--acc);display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.script{font-family:var(--script);font-weight:700;font-size:clamp(1.5rem,3vw,2.25rem);line-height:1;color:var(--acc);display:flex;align-items:center;gap:12px;margin-bottom:12px}
 @media(min-width:640px){.script{margin-bottom:20px}}
 .squiggle-svg{height:.8em;width:auto;color:color-mix(in srgb, var(--acc) 80%, transparent);flex:none}
 .mega{font-family:var(--display);font-size:clamp(2.6rem,12vw,5rem);line-height:.92;letter-spacing:-.045em;font-weight:600;margin:0}
@@ -223,7 +235,8 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 .dots{height:90px;margin:6px 0;background-image:radial-gradient(color-mix(in srgb, var(--acc) 70%, transparent) 1.4px, transparent 1.5px);background-size:16px 16px;mask-image:radial-gradient(300px 90px at 20% 20%, #000 30%, transparent 75%);opacity:.7}
 .hero-right{display:flex;justify-content:center;padding:0 40px 3rem}
 @media(min-width:640px){.hero-right{padding:0 0 0}}
-.photo-wrap{position:relative;width:min(288px,70vw)}
+.photo-wrap{position:relative;width:min(240px,70vw)}
+@media(min-width:640px){.photo-wrap{width:288px}}
 /* mikedev exact: mx-auto max-w-15rem/18rem, perspective 1000px, rest rotate 3°, walay hover scale */
 .photo-card{position:relative;aspect-ratio:4/5;background:#1c1c1c;border-radius:28px;box-shadow:0 1px 0 1px rgba(255,255,255,.1),0 30px 80px -20px rgba(0,0,0,.8);overflow:hidden;transform:rotate(3deg);transform-style:preserve-3d;transition:transform .3s cubic-bezier(.22,1,.36,1);will-change:transform}
 .photo-glow{position:absolute;inset:0;z-index:1;opacity:0;transition:opacity .3s;mix-blend-mode:overlay;pointer-events:none;background:radial-gradient(60% 50% at 50% 50%,rgba(255,255,255,.18),transparent 70%)}
@@ -257,7 +270,7 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 @keyframes rotIn{from{opacity:0;transform:translateY(.3em);filter:blur(6px)}to{opacity:1;transform:none;filter:blur(0)}}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(prefers-reduced-motion:reduce){.rot-word{transition:none}.rot-word.rot-in{animation:none}}
-.pill.like.liked{background:color-mix(in srgb, var(--acc) 14%, transparent);box-shadow:0 8px 22px color-mix(in srgb, var(--acc) 22%, transparent)}
+.pill.like.liked{border-color:color-mix(in srgb, var(--acc) 40%, transparent);background:color-mix(in srgb, var(--acc) 10%, transparent);color:var(--acc)}
 .pill.like.liked svg{fill:var(--acc);stroke:var(--acc)}
 .confetti{position:fixed;z-index:80;pointer-events:none;border-radius:1px;animation:confFall 1.4s cubic-bezier(.2,.7,.3,1) forwards}
 @keyframes confFall{0%{opacity:1;transform:translate(-50%,-50%) rotate(0)}100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,-160px))) rotate(var(--rot,180deg))}}
@@ -311,7 +324,10 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 /* ===== hero split row — mikedev exact: divider + plain stats (walay boxes) ===== */
 .hero-split{display:grid;border-top:1px solid rgba(255,255,255,.06);padding-top:2rem;margin-top:0;gap:2.5rem}
 @media(min-width:1024px){.hero-split{grid-template-columns:1fr 1fr;align-items:end}}
-.hero-split .cta-row{margin-top:1.75rem;display:flex;flex-wrap:wrap;align-items:center;gap:1.5rem 1.75rem}
+.hero-split .cta-row{margin-top:1.75rem;display:flex;flex-wrap:wrap;align-items:center;row-gap:1rem;column-gap:1.5rem}
+/* mikedev exact hero CTA: py-3 pl-5 pr-4 (12px vert, 20px left, 16px right) */
+.hero-split .cta-row .btn{padding-top:12px;padding-bottom:12px}
+.hero-split .cta-row .btn.talk{padding-left:20px}
 .hero-split-r{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;justify-items:start}
 @media(min-width:1024px){.hero-split-r{justify-items:end}}.hero-split-r .stat{background:none;border:0;border-radius:0;padding:0;text-align:left;transition:none}
 .hero-split-r .stat:hover{transform:none}

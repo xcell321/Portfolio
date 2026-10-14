@@ -12,5 +12,5 @@
 const services=<?=json_encode(token('services', []))?>;
 document.getElementById('mq').innerHTML=(services.map(s=>`<span>${s} <b>•</b></span>`).join('')).repeat(4);
 </script>
-<script src="assets/js/main.js?v=20261014v"></script>
+<script src="assets/js/main.js?v=20261014x"></script>
 </body></html>

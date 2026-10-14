@@ -14,7 +14,7 @@ return [
   'social.facebook' => 'https://www.facebook.com/profile.php?id=61582278170639',
 
   'hero.badge'    => 'Available for new projects',
-  'hero.welcome'  => 'welcome back! still Edsiel',
+  'hero.welcome'  => 'welcome back! still Edsiel Ursal',
   'hero.greeting' => "hey, I'm",
   'hero.line1'    => 'I design & build',
   'hero.line2'    => 'digital products',
