@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 950 360">
+  <g fill="none" stroke="#ffffff" stroke-linecap="round">
+    <!-- main sweep: top flick, down to big oval, long rising tail -->
+    <path d="M610 55 C 500 108, 360 160, 252 194 C 232 200, 232 213, 254 208 C 300 198, 340 190, 380 183
+             M252 208 C 160 242, 40 282, 34 301 C 28 322, 72 336, 135 328
+             C 260 312, 470 252, 620 218 C 720 197, 800 197, 888 207" stroke-width="22"/>
+    <!-- middle bar of E -->
+    <path d="M352 178 C 395 167, 435 156, 478 141" stroke-width="22"/>
+    <!-- inner hook -->
+    <path d="M428 228 C 448 218, 470 211, 492 205 C 483 230, 472 256, 467 276 C 464 287, 478 289, 489 282 C 525 258, 565 240, 605 229" stroke-width="22"/>
+    <!-- dot -->
+    <circle cx="508" cy="158" r="13" fill="#ffffff" stroke="none"/>
+  </g>
+</svg>
