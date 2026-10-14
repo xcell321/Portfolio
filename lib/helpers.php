@@ -21,3 +21,18 @@ function e($v): string {
 function ext(string $url): string {
   return 'href="' . e($url) . '" target="_blank" rel="noopener"';
 }
+
+/**
+ * Two-tone section title — mikedev.site exact (T.w header):
+ * first words plain, last N words dim (stone-500).
+ * e.g. split_title('One partner, from concept to shipped release.', 3)
+ *   => '<span>One partner, from concept</span> <span class=dim>to shipped release.</span>'
+ */
+function split_title(string $text, int $words = 3): string {
+  $parts = preg_split('/\s+/', trim($text));
+  $n = count($parts);
+  if ($n <= $words) return e($text);
+  $head = implode(' ', array_slice($parts, 0, $n - $words));
+  $tail = implode(' ', array_slice($parts, $n - $words));
+  return e($head) . ' <span class="dim">' . e($tail) . '</span>';
+}

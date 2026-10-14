@@ -1,6 +1,6 @@
 <section id="about"><div class="wrap">
   <div class="kicker"><?=token('about.kicker')?></div>
-  <h2 class="title rv"><?=token('about.title')?></h2>
+  <h2 class="title rv"><?=split_title(token('about.title'), 3)?></h2>
   <p class="rv" style="color:var(--mut);max-width:640px;margin:0 0 18px">I move between product strategy, interface design, and the engineering that powers production apps. You get fewer handoffs and a product that holds together.</p>
   <div style="display:flex;gap:8px;margin:0 0 22px;flex-wrap:wrap">
     <a class="btn ghost" <?=ext(token('social.github'))?>><?=icon('github',15)?> GitHub</a>
@@ -8,9 +8,9 @@
     <a class="btn ghost" <?=ext(token('social.facebook'))?>><?=icon('facebook',15)?> Facebook</a>
   </div>
   <div class="cards3">
-    <div class="card rv"><div class="card-ic"><?=icon('code',26)?></div><h3><?=token('about.card1_title')?></h3><p><?=token('about.card1_desc')?></p></div>
-    <div class="card rv"><div class="card-ic"><?=icon('mobile',26)?></div><h3><?=token('about.card2_title')?></h3><p><?=token('about.card2_desc')?></p></div>
-    <div class="card rv"><div class="card-ic"><?=icon('palette',26)?></div><h3><?=token('about.card3_title')?></h3><p><?=token('about.card3_desc')?></p></div>
+    <div class="card rv" data-rvd="0"><div class="card-ic"><?=icon('code',26)?></div><h3><?=token('about.card1_title')?></h3><p><?=token('about.card1_desc')?></p></div>
+    <div class="card rv" data-rvd="0.06"><div class="card-ic"><?=icon('mobile',26)?></div><h3><?=token('about.card2_title')?></h3><p><?=token('about.card2_desc')?></p></div>
+    <div class="card rv" data-rvd="0.12"><div class="card-ic"><?=icon('palette',26)?></div><h3><?=token('about.card3_title')?></h3><p><?=token('about.card3_desc')?></p></div>
   </div>
   <h3 style="margin:26px 0 6px">Skills <small style="color:var(--mut)">— Tap a word to see where I've used it.</small></h3>
   <p style="color:var(--mut);font-size:12px;margin:0 0 8px">always a work in progress · updated Oct 2026</p>

@@ -1,10 +1,79 @@
-// reveal on scroll
-const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis')}),{threshold:.12});
-document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+// ==========================================================================
+// smooth scroll — mikedev.site exact Lenis config (app-layout module, de-minified):
+// duration:.7, easing:t=>1-Math.pow(1-t,3) (easeOutCubic), orientation vertical,
+// gestureOrientation vertical, smoothWheel:true, wheelMultiplier:1.2,
+// touchMultiplier:1.5, infinite:false + rAF loop nga nag-pause sa hidden tab
+// (visibilitychange) — same pause guard as Mike's u() loop
+// ==========================================================================
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  if('scrollingElement' in document===false)return;
+  const s=document.createElement('script');
+  s.src='https://unpkg.com/lenis@1/dist/lenis.min.js';
+  s.async=true;
+  s.onload=function(){
+    try{
+      const Lenis=window.Lenis||window.lenis;
+      if(!Lenis)return;
+      let raf=0,hidden=false;
+      const lenis=new Lenis({
+        duration:.7,
+        easing:function(t){return 1-Math.pow(1-t,3)},
+        orientation:'vertical',
+        gestureOrientation:'vertical',
+        smoothWheel:true,
+        wheelMultiplier:1.2,
+        touchMultiplier:1.5,
+        infinite:false
+      });
+      window.lenis=lenis;
+      function loop(time){
+        // Mike's exact guard: rAF keeps ticking but scrollTo/scroll aan pa sa hidden
+        if(!document.hidden&&!hidden)lenis.raf(time);
+        raf=requestAnimationFrame(loop);
+      }
+      raf=requestAnimationFrame(loop);
+      document.addEventListener('visibilitychange',function(){hidden=document.hidden});
+      addEventListener('pagehide',function(){cancelAnimationFrame(raf);lenis.destroy();window.lenis=null},{once:true});
+    }catch(e){}
+  };
+  document.head.appendChild(s);
+})();
+// ==========================================================================
+// anchor clicks → lenis.scrollTo — mikedev.site exact (module 44359 o() helper):
+// 'top' → scrollTo(0,{duration:1.1}); targets → pos - 80px header offset, {duration:1.1}
+// native jump fallback kung wala pa na-load ang Lenis
+// ==========================================================================
+document.addEventListener('click',function(e){
+  const a=e.target.closest&&e.target.closest('a[href^="#"]');
+  if(!a)return;
+  const href=a.getAttribute('href');
+  if(!href||href==='#')return;
+  const target=document.getElementById(href.slice(1));
+  if(!target)return;
+  e.preventDefault();
+  const l=window.lenis;
+  if(l&&l.scrollTo){
+    if(href==='#top')l.scrollTo(0,{duration:1.1});
+    else l.scrollTo(target,{duration:1.1,offset:-80});
+  }else{
+    const y=href==='#top'?0:target.getBoundingClientRect().top+window.scrollY-80;
+    window.scrollTo({top:y,behavior:'smooth'});
+  }
+});
+// reveal on scroll — mikedev.site exact: viewport {once:true, margin:-60px};
+// stagger delay gikan sa data-rvd attribute → paint as --rvd CSS var (transition-delay)
+(function(){
+  document.querySelectorAll('.rv[data-rvd]').forEach(el=>{el.style.setProperty('--rvd',el.dataset.rvd+'s')});
+  const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target)}})},{rootMargin:'-60px 0px -60px 0px'});
+  document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+})();
 // floating pill nav on scroll (mikedev.site style — transparent sa top, pill pag scroll)
 addEventListener('scroll',()=>{
-  // mikedev.site exact: nav starts fully transparent, becomes the pill only after scrolling
-  document.querySelector('.nav-in')?.classList.toggle('scrolled',scrollY>8);
+  // mikedev.site exact: nav starts fully transparent, becomes the pill only after scrolling >24px
+  const sc=scrollY>24;
+  const nav=document.querySelector('.nav-in');
+  if(nav&&!nav.classList.contains('force-pill'))nav.classList.toggle('scrolled',sc);
   const hdr=document.querySelector('.site-header');
   if(hdr) hdr.classList.toggle('scrolled',scrollY>40);
   document.querySelector('.nav')?.classList.toggle('scrolled',scrollY>40);
@@ -12,7 +81,7 @@ addEventListener('scroll',()=>{
 },{passive:true});
 // apply scroll state on load too — mid-page reloads skip the scroll event, so the pill
 // must render immediately instead of waiting for the first wheel move
-(function(){const y=window.scrollY||window.pageYOffset||0;document.querySelector('.nav-in')?.classList.toggle('scrolled',y>8)})();
+(function(){const y=window.scrollY||window.pageYOffset||0;document.querySelector('.nav-in')?.classList.toggle('scrolled',y>24)})();
 const ACCENTS=[['Lime','#d4fd73'],['Mint','#6ee7b7'],['Sky','#7dd3fc'],['Violet','#c4b5fd'],['Pink','#f9a8d4'],['Peach','#fdba74'],['Sun','#fde047']];
 function paintSwatches(){
   const box=document.getElementById('swatches');if(!box||box.children.length)return;
@@ -35,7 +104,6 @@ function setAccent(n,h){
   document.dispatchEvent(new CustomEvent('accentchange',{detail:h}));
   document.getElementById('themeName').textContent=n;
   paintSwatchesRefresh(h);
-  toast(n+' · saved for your next visit');
 }
 function paintSwatchesRefresh(h){
   h=(h||'').toLowerCase();
@@ -59,8 +127,14 @@ document.addEventListener('click',e=>{const p=document.getElementById('themePop'
     if(found){const tn=document.getElementById('themeName');if(tn)tn.textContent=found[0]}
   }catch(e){}
 })();
-// nav mobile
-function toggleNav(){document.getElementById('navLinks').classList.toggle('open')}
+// nav mobile — mikedev exact: pill mu-show pud inig open sa menu (e||a)
+function toggleNav(){
+  const l=document.getElementById('navLinks');if(!l)return;
+  l.classList.toggle('open');
+  const nav=document.querySelector('.nav-in');if(!nav)return;
+  if(l.classList.contains('open')){nav.classList.add('scrolled');nav.classList.add('force-pill')}
+  else{nav.classList.remove('force-pill');nav.classList.toggle('scrolled',(window.scrollY||0)>24)}
+}
 // ---- active-section nav pill — mikedev.site exact ----
 // IO rootMargin "-45% 0px -50% 0px" (center band of viewport) over #top + every nav target;
 // sliding pill bg-white/[.07] behind the active link (mikedev uses a framer spring:
@@ -88,6 +162,7 @@ function toggleNav(){document.getElementById('navLinks').classList.toggle('open'
   }
   function clear(){
     active=null;
+    links.forEach(a=>a.classList.remove('on'));
     pill.classList.remove('show');
   }
   function paint(){
@@ -260,8 +335,36 @@ function setDuty(on){
     pc.addEventListener('mouseleave',()=>{tx=0;ty=0;active=false;if(!raf)raf=requestAnimationFrame(frame);setDuty(true)});
   }
 })();
-// back to top
-function toTop(){scrollTo({top:0,behavior:'smooth'})}
+// ---- hero scroll-fade — mikedev.site exact (component z):
+// progress = scrollY / hero height (framer offset ["start start","end start"]);
+// opacity 1→0 at [.7] of exit, y 0→−120px at [1]; desktop-only; reduced-motion = static.
+// rAF-throttled, sa hero-inner content ra gi-apply (bg canvas/orbs stay put).
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const hero=document.getElementById('top'),inner=hero&&hero.querySelector('.hero-inner');
+  if(!hero||!inner)return;
+  // mike's matchMedia(min-width:1024px): mobile keeps static opacity 1 — same guard
+  const mq=matchMedia('(min-width: 1024px)');
+  let active=mq.matches,ticking=false;
+  function apply(){
+    ticking=false;
+    if(!active){inner.style.opacity='';inner.style.transform='';return}
+    const h=hero.offsetHeight||inner.offsetHeight;
+    if(h<=0)return;
+    const p=Math.min(1,Math.max(0,(window.scrollY||window.pageYOffset||0)/h));   // progress 0..1 ngadto sa hero end
+    // framer useTransform pairs: opacity [0,.7]→[1,0] (linear), y [0,1]→[0,-120]
+    const op=Math.max(0,1-p/.7);
+    const y=(0-p)*120;
+    inner.style.opacity=op.toFixed(4);
+    inner.style.transform='translate3d(0,'+y.toFixed(2)+'px,0)';
+  }
+  function onScroll(){if(!ticking){ticking=true;requestAnimationFrame(apply)}}
+  addEventListener('scroll',onScroll,{passive:true});
+  mq.addEventListener&&mq.addEventListener('change',e=>{active=e.matches;onScroll()});
+  apply();
+})();
+// back to top — lenis-aware: duration 1.1 same sa anchor helper (mikedev exact)
+function toTop(){const l=window.lenis;if(l&&l.scrollTo){l.scrollTo(0,{duration:1.1})}else{scrollTo({top:0,behavior:'smooth'})}}
 function toast(m,action){const t=document.getElementById('toast');if(!t)return;t.innerHTML='';t.append(document.createTextNode(m));if(action&&action.label){const b=document.createElement('button');b.type='button';b.className='toast-act';b.textContent=action.label;b.onclick=()=>{t.classList.remove('show');if(action.fn)action.fn()};t.append(b)}t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
 // ---- command palette filter (mikedev.site: jump to all sections) ----
 function palFilter(q){
@@ -415,6 +518,28 @@ function burstConfetti(x,y,n){
     document.body.append(p);setTimeout(()=>p.remove(),2000);
   }
 }
+// ---- copy email button — mikedev.site exact (component D):
+// clipboard.writeText → 1800ms "Copied to clipboard" + icon swap; catch → mailto fallback
+(async function(){
+  const btn=document.getElementById('copyEmail');
+  if(!btn||!navigator.clipboard)return;
+  const txt=btn.querySelector('.copy-txt');
+  const email=btn.getAttribute('data-email')||((txt&&txt.textContent)||'').trim();
+  let t=0;
+  btn.addEventListener('click',async()=>{
+    try{
+      await navigator.clipboard.writeText(email);
+      btn.classList.add('copied');
+      if(txt){
+        txt.textContent='Copied to clipboard';
+        clearTimeout(t);
+        t=setTimeout(()=>{btn.classList.remove('copied');txt.textContent=email},1800);   // Mike: exact 1800ms
+      }
+    }catch(e){
+      window.location.href='mailto:'+email;                                             // Mike: exact fallback
+    }
+  });
+})();
 // ---- open-to-work sticker easter egg (1/5) + dark pop-toast sunod sa video ----
 function showPop(title,sub){
   const t=document.getElementById('popToast');if(!t)return;
@@ -426,7 +551,7 @@ function popSticker(ev){
   let n=0;try{n=parseInt(localStorage.getItem('sticker_pops')||'0',10)||0}catch(e){}
   const x=ev&&ev.clientX!==undefined?ev.clientX:innerWidth*0.75;
   const y=ev&&ev.clientY!==undefined?ev.clientY:200;
-  burstConfetti(x,y,130);
+  mikeConfetti(x,y,70);
   const badge=document.getElementById('stickerBadge');
   if(badge){badge.classList.remove('popped');void badge.offsetWidth;badge.classList.add('popped');setTimeout(()=>badge.classList.remove('popped'),600)}
   if(n>=1){

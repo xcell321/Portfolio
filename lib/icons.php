@@ -16,6 +16,7 @@ function icon(string $name, int $size = 18): string {
     'linkedin' => '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 11v5M8 8v.1M12 16v-3a2 2 0 014 0v3M12 11v1"/>',
     'facebook' => '<path d="M14 8h2V5h-2a3 3 0 00-3 3v2H9v3h2v6h3v-6h2l1-3h-3V8.5c0-.3.2-.5.5-.5z"/>',
     'arrow' => '<path d="M7 17L17 7M9 7h8v8"/>',
+    'down'  => '<path d="M12 5v14m7-7-7 7-7-7"/>',
     'rocket' => '<path d="M12 15c5-4 7-9 7-12-3 0-8 2-12 7l-3 1 4 4 4 4 1-3z"/><circle cx="15" cy="9" r="1.5"/><path d="M9 12c-2 1-3 4-3 7 3 0 6-1 7-3"/>',
     'chart' => '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
     'note' => '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
@@ -25,6 +26,7 @@ function icon(string $name, int $size = 18): string {
     'brain' => '<path d="M9 4a3 3 0 00-3 3 3 3 0 00-2 5 3 3 0 002 5 3 3 0 006 1 3 3 0 006-1 3 3 0 002-5 3 3 0 00-2-5 3 3 0 00-3-3 3 3 0 00-3 2 3 3 0 00-3-2z"/>',
     'award' => '<circle cx="12" cy="9" r="5"/><path d="M8.5 13.5L7 21l5-2.5L17 21l-1.5-7.5"/>',
     'code' => '<path d="M8 6l-5 6 5 6M16 6l5 6-5 6"/>',
+    'command' => '<path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/>',
     'palette' => '<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1"/><circle cx="14" cy="9" r="1"/><circle cx="15" cy="14" r="1"/><path d="M12 21c-1 0-1-1-1-2h3c0 1 0 2-2 2z"/>',
     'mobile' => '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18.5h2"/>',
     'send' => '<path d="M21 3L10 14M21 3l-7 18-3-8-8-3z"/>',
@@ -32,6 +34,7 @@ function icon(string $name, int $size = 18): string {
     'chat' => '<path d="M21 12a8 8 0 01-8 8H4l2-3a8 8 0 1115-5z"/>',
     'plus' => '<path d="M12 5v14M5 12h14"/>',
     'check' => '<path d="M4 12.5l5 5L20 6.5"/>',
+    'copy'  => '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v"/>',
     'user' => '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
   ];
   $inner = $P[$name] ?? $P['spark'];

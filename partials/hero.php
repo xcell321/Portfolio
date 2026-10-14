@@ -28,7 +28,7 @@
           <span class="wave"><?=icon('hand',30)?></span>
         </div>
         <div class="photo-card" id="photoCard" title="hover me">
-          <div class="photo"><img class="layer top" src="<?=e(token('photo.duty'))?>" style="object-position:<?=e(token('photo.duty_pos'))?>;--z:1.5" alt="<?=e(token('owner_name'))?> on duty" onerror="this.remove()"><img class="layer bot" src="<?=e(token('photo.off'))?>" style="object-position:<?=e(token('photo.off_pos'))?>;--z:1.1" alt="<?=e(token('owner_name'))?> off duty" onerror="this.remove()"><div class="photo-glow" id="photoGlow" aria-hidden="true"></div><div class="photo-foot"><div><b><?=e(token('owner_name'))?></b><small><?=e(token('role'))?></small></div><span class="onduty" id="dutyBadge">ON DUTY</span></div></div>
+          <div class="photo"><img class="layer top" draggable="false" src="<?=e(token('photo.duty'))?>" style="object-position:<?=e(token('photo.duty_pos'))?>;--z:1.5" alt="<?=e(token('owner_name'))?> on duty" onerror="this.remove()"><img class="layer bot" draggable="false" src="<?=e(token('photo.off'))?>" style="object-position:<?=e(token('photo.off_pos'))?>;--z:1.1" alt="<?=e(token('owner_name'))?> off duty" onerror="this.remove()"><div class="photo-glow" id="photoGlow" aria-hidden="true"></div><div class="photo-foot"><div><b><?=e(token('owner_name'))?></b><small><?=e(token('role'))?></small></div><span class="onduty" id="dutyBadge">ON DUTY</span></div></div>
         </div>
         <div class="hoverme"><svg width="34" height="26" viewBox="0 0 34 26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M28 22 C 18 22, 9 17, 8 6 M8 6 l-5 7 M8 6 l7 4"/></svg><span>hover me</span></div>
       </div>
@@ -39,8 +39,14 @@
     <div class="hero-split-l">
       <p class="hero-sub"><b><?=e(token('role'))?> & Designer</b> from the Philippines. <?=e(token('hero.desc'))?></p>
       <div class="cta-row">
-        <a class="btn talk" href="#projects"><?=e(token('hero.cta_work'))?></a>
-        <a class="btn ghost" href="mailto:<?=e(token('email'))?>"><?=icon('mail',15)?> <?=e(token('email'))?></a>
+        <a class="btn talk cta-work" href="#projects"><?=e(preg_replace('/\s*↓\s*$/', '', token('hero.cta_work')))?> <span class="cta-arr"><?=icon('down',14)?></span></a>
+        <button type="button" class="copy-email" id="copyEmail" data-email="<?=e(token('email'))?>" aria-label="Copy email address <?=e(token('email'))?>">
+          <span class="copy-ic">
+            <span class="copy-ic-copy"><?=icon('copy',15)?></span>
+            <span class="copy-ic-ok"><?=icon('check',15)?></span>
+          </span>
+          <span class="copy-txt"><?=e(token('email'))?></span>
+        </button>
       </div>
     </div>
     <div class="hero-split-r">

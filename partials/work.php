@@ -1,6 +1,6 @@
 <section id="projects"><div class="wrap">
   <div class="kicker"><?=token('work.kicker')?></div>
-  <h2 class="title rv"><?=token('work.title')?></h2>
+  <h2 class="title rv"><?=split_title(token('work.title'), 2)?></h2>
   <p style="color:var(--mut)">A handful of products taken from a blank file to production, end to end.</p>
   <p style="color:var(--mut);font-size:13px;margin-top:4px"><?=count($projects)?> projects</p>
   <?php foreach ($projects as $p):

@@ -10,7 +10,7 @@
 <div id="toast"></div>
 <script>
 const services=<?=json_encode(token('services', []))?>;
-document.getElementById('mq').innerHTML=(services.map(s=>`<span>${s} <b>•</b></span>`).join('')).repeat(4);
+document.getElementById('mq').innerHTML=(services.map(s=>`<li><span class="t">${s}</span><span class="sep">✦</span></li>`).join('')).repeat(4);
 </script>
-<script src="assets/js/main.js?v=20261014x"></script>
+<script src="assets/js/main.js?v=20261015g"></script>
 </body></html>

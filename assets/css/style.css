@@ -7,7 +7,9 @@
 /* text selection — musunod sa current accent color (dili default blue), parehas ni mikedev.site */
 ::selection{background:var(--acc);color:#000}
 ::-moz-selection{background:var(--acc);color:#000}
-html{scroll-behavior:smooth}
+/* smooth scroll — Lenis handles the tweening (mikedev exact), native smooth off
+   para dili mag-duplicate ang easing sa anchor jumps og browser-key scroll */
+html{scroll-behavior:auto}
 body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hidden;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 a{color:inherit;text-decoration:none}
 .wrap{max-width:72rem;margin:0 auto;padding:0 20px}
@@ -28,7 +30,7 @@ a{color:inherit;text-decoration:none}
 .logo-txt{font-family:var(--font);font-size:14px;line-height:20px;font-weight:600;color:#f5f5f4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:380px){.logo-txt{display:none}}
 /* mikedev: ul flex gap-0.5 xl:gap-1, links px-3 py-1.5 sm stone-400 hover stone-100, xl px-3.5 */
-.links{position:relative;display:none;align-items:center;gap:2px;list-style:none;margin:0;padding:0}
+.links{position:relative;display:none;align-items:center;gap:2px;list-style:none;margin:0;padding:0;isolation:isolate}
 @media(min-width:1024px){.links{display:flex}}
 @media(min-width:1280px){.links{gap:4px}}
 .links a{position:relative;display:block;white-space:nowrap;border-radius:9999px;padding:6px 12px;font-size:14px;line-height:22px;letter-spacing:.01em;font-weight:400;color:#a8a29e;transition:color .2s}
@@ -53,8 +55,9 @@ a{color:inherit;text-decoration:none}
 .icon-dot{position:relative;width:16px;height:16px;display:block;border-radius:50%;background:var(--acc);box-shadow:0 0 10px color-mix(in srgb,var(--acc) 60%,transparent);transition:background-color .3s}
 .icon-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.15)}
 .icon-btn:hover .icon-dot{background-color:var(--acc)}
-.cmd-btn{height:36px;padding:0 8px 0 12px;border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.02)}
+.cmd-btn{height:36px;padding:0 8px 0 12px;border-color:rgba(255,255,255,.08);background:transparent}
 .cmd-btn svg{width:16px;height:16px}
+@media(min-width:1280px){.cmd-btn svg{width:14px;height:14px}}
 .cmd-btn kbd{display:none;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono',monospace;font-size:10px;line-height:1;color:#a8a29e;background:rgba(255,255,255,.06);border-radius:6px;padding:2px 6px;font-weight:400}
 @media(min-width:1280px){.cmd-btn kbd{display:inline-block}}
 .burger{display:inline-flex;height:40px;width:40px;align-items:center;justify-content:center;border-radius:9999px;color:#e7e5e4;background:transparent;border:0;cursor:pointer}
@@ -86,11 +89,15 @@ a{color:inherit;text-decoration:none}
 .profile-card:hover{transform:translateY(-4px) rotate(-.4deg);border-color:#343442}
 .avatar{width:100%;aspect-ratio:4/3;border-radius:14px;background:radial-gradient(circle at 30% 20%,#2a2a3a,#14141c);display:flex;align-items:center;justify-content:center;font-size:90px;border:1px solid var(--line)}
 .status{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:14px}
-.marquee{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:34px 0;white-space:nowrap;background:var(--bg2)}
-.mq{display:inline-block;padding:14px 0;animation:scroll 22s linear infinite}
-.mq:hover{animation-play-state:paused}
-.mq span{margin:0 22px;font-weight:600;color:var(--mut)}.mq b{color:var(--acc)}
-@keyframes scroll{to{transform:translateX(-50%)}}
+/* marquee — mikedev.site exact: 40s linear infinite, WALAY hunong (walay hover pause), 4x duplicate seamless -50% loop */
+.marquee{overflow:hidden;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);white-space:nowrap}
+.mq{display:flex;width:max-content;align-items:center;padding:16px 0;animation:marquee-x 40s linear infinite;will-change:transform}
+.mq li{display:flex;align-items:center;flex:none;font-family:var(--display);font-size:18px;line-height:1.5;color:#a8a29e;list-style:none}
+@media(min-width:640px){.mq li{font-size:20px}}
+.mq li .t{padding:0 24px;white-space:nowrap}
+.mq li .sep{color:var(--acc);font-size:.85em}
+@keyframes marquee-x{0%{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.mq{animation:none}}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center;transition:.25s}
 .stat:hover{transform:translateY(-3px);border-color:var(--acc)}
@@ -98,7 +105,10 @@ a{color:inherit;text-decoration:none}
 /* SECTIONS */
 section{padding:70px 0}
 .kicker{color:var(--acc);font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase}
-h2.title{font-family:var(--display);font-size:clamp(28px,4vw,44px);letter-spacing:-.02em;margin:10px 0 18px;line-height:1.08;font-weight:700}
+h2.title{font-family:var(--display);font-size:clamp(28px,4vw,44px);letter-spacing:-.02em;margin:10px 0 18px;line-height:1.1;font-weight:600}
+/* mikedev T.w header exact: ika-duha nga half sa title stone-500 (#78716c,
+   same as hero .amp &”&” mark) — ".dim" span from split_title() helper */
+.title .dim{color:#78716c}
 .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;transition:transform .25s,border-color .25s,box-shadow .25s}
 .card:hover{transform:translateY(-5px);border-color:var(--acc);box-shadow:0 16px 40px rgba(0,0,0,.4)}
@@ -147,7 +157,7 @@ label{font-size:13px;color:var(--mut);margin-top:14px;display:block}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 /* footer */
 footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
-.big{font-size:clamp(48px,10vw,120px);font-weight:900;letter-spacing:-3px;opacity:.14;white-space:nowrap;overflow:hidden;user-select:none;cursor:default}
+.big{font-size:clamp(40px,13vw,10rem);font-weight:600;letter-spacing:-.05em;opacity:.14;white-space:nowrap;overflow:hidden;user-select:none;cursor:default}
 /* ticklish letters — mikedev.site exact: color transition .5s, hover → stone-200,
    poked → accent, transform-origin bottom sa poke animation */
 .big span{display:inline-block;transform-origin:50% 100%;transition:color .5s ease,opacity .5s ease}
@@ -156,9 +166,12 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 .foot{display:flex;gap:30px;flex-wrap:wrap;color:var(--mut);font-size:14px;margin:18px 0}
 /* floating */
 #toTop{position:fixed;right:20px;bottom:20px;z-index:40}
-/* reveal */
-.rv{opacity:0;transform:translateY(26px);transition:opacity .6s,transform .6s}
-.rv.vis{opacity:1;transform:none}
+/* reveal — mikedev.site exact (module 3312 Reveal primitive):
+   initial {opacity:0, y:16 (y:0 sa reduced-motion)}, whileInView {opacity:1,y:0},
+   viewport {once:true, margin:-60px}, transition {duration:.7, delay, ease[.22,1,.36,1]} */
+.rv{opacity:0;transform:translate3d(0,16px,0);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1);transition-delay:var(--rvd,0s);will-change:opacity,transform}
+.rv.vis{opacity:1;transform:translate3d(0,0,0)}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
 /* palette */
 #pal{position:fixed;inset:0;display:none;align-items:flex-start;justify-content:center;background:rgba(0,0,0,.6);z-index:99;padding-top:12vh}
 #pal.open{display:flex}
@@ -238,7 +251,8 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 .photo-wrap{position:relative;width:min(240px,70vw)}
 @media(min-width:640px){.photo-wrap{width:288px}}
 /* mikedev exact: mx-auto max-w-15rem/18rem, perspective 1000px, rest rotate 3°, walay hover scale */
-.photo-card{position:relative;aspect-ratio:4/5;background:#1c1c1c;border-radius:28px;box-shadow:0 1px 0 1px rgba(255,255,255,.1),0 30px 80px -20px rgba(0,0,0,.8);overflow:hidden;transform:rotate(3deg);transform-style:preserve-3d;transition:transform .3s cubic-bezier(.22,1,.36,1);will-change:transform}
+.photo-card{position:relative;aspect-ratio:4/5;background:#1c1c1c;border-radius:28px;box-shadow:0 1px 0 1px rgba(255,255,255,.1),0 30px 80px -20px rgba(0,0,0,.8);overflow:hidden;transform:rotate(3deg);transform-style:preserve-3d;transition:transform .3s cubic-bezier(.22,1,.36,1);will-change:transform;user-select:none;-webkit-user-select:none}
+.photo-card img{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
 .photo-glow{position:absolute;inset:0;z-index:1;opacity:0;transition:opacity .3s;mix-blend-mode:overlay;pointer-events:none;background:radial-gradient(60% 50% at 50% 50%,rgba(255,255,255,.18),transparent 70%)}
 .photo-card:hover .photo-glow{opacity:1}
 .photo{position:absolute;inset:0}
@@ -253,7 +267,7 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 .photo-foot::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,rgba(0,0,0,.8),rgba(0,0,0,.1),transparent)}
 .photo-foot b{font-family:var(--display);font-size:18px;font-weight:600;line-height:1.3;letter-spacing:-.01em;margin:0}
 .photo-foot small{color:rgba(214,211,209,.8);font-size:12px;line-height:1.3;margin-top:2px;display:block}
-.spin-badge{position:absolute;top:-44px;left:-40px;width:96px;height:96px;z-index:2;background:var(--acc);border-radius:50%;box-shadow:0 12px 30px rgba(0,0,0,.45);animation:spin 16s linear infinite;transform:rotate(-12deg)}
+.spin-badge{position:absolute;top:-44px;left:-40px;width:96px;height:96px;z-index:2;background:var(--acc);border-radius:50%;box-shadow:0 12px 30px rgba(0,0,0,.45);animation:spin 16s linear infinite;transform:rotate(-12deg);user-select:none;-webkit-user-select:none}
 .spin-badge > svg{width:100%;height:100%;fill:#1c2405;font-size:9.2px;letter-spacing:.12em;font-weight:600}
 .spin-badge .wave svg{width:30px;height:30px;font-size:24px}
 .spin-badge .wave{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#1c2405;animation:spinBack 16s linear infinite}
@@ -318,7 +332,7 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 .sk-count{display:inline-block;min-width:22px;text-align:center;font-size:11px;background:rgba(255,255,255,.08);border-radius:999px;padding:1px 7px;margin-left:6px;color:var(--mut)}
 .tool{display:inline-flex;align-items:center;gap:7px}
 .tool img{width:16px;height:16px;display:block}
-.marquee{mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.marquee{mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
 .mq span{font-family:var(--display)}
 .acc-head{flex-wrap:wrap;gap:8px}
 /* ===== hero split row — mikedev exact: divider + plain stats (walay boxes) ===== */
@@ -327,7 +341,13 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 .hero-split .cta-row{margin-top:1.75rem;display:flex;flex-wrap:wrap;align-items:center;row-gap:1rem;column-gap:1.5rem}
 /* mikedev exact hero CTA: py-3 pl-5 pr-4 (12px vert, 20px left, 16px right) */
 .hero-split .cta-row .btn{padding-top:12px;padding-bottom:12px}
-.hero-split .cta-row .btn.talk{padding-left:20px}
+.hero-split .cta-row .btn.talk{padding-left:20px;padding-right:16px}
+/* "See selected work" arrow bubble — mikedev exact:
+   span flex h-5 w-5 (20px circle) rounded-full bg-stone-950/10, inner icon 14px,
+   group-hover: icon circle slides down 2px (translate-y-0.5, 300ms) */
+.cta-arr{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex:none;border-radius:9999px;background:rgba(12,10,9,.1);color:#0c0a09;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.cta-arr svg{width:14px;height:14px}
+.btn.talk:hover .cta-arr{transform:translateY(2px)}
 .hero-split-r{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;justify-items:start}
 @media(min-width:1024px){.hero-split-r{justify-items:end}}.hero-split-r .stat{background:none;border:0;border-radius:0;padding:0;text-align:left;transition:none}
 .hero-split-r .stat:hover{transform:none}
@@ -337,4 +357,19 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 .hero-split-r .stat p{color:#78716c;font-size:12px;margin-top:4px}
 .hero-sub{max-width:28rem;color:#a8a29e;font-size:15px;line-height:1.625}
 @media(min-width:640px){.hero-sub{font-size:16px}}
-.hero-sub b,.hero-sub span.lead{color:#e7e5e4}
+/* hero-sub lead — mikedev exact: span.text-stone-200 lang (#e7e5e4), WALAY bold
+   (same font-weight ra sa body text — dili <b>) */
+.hero-sub b,.hero-sub span.lead{color:#e7e5e4;font-weight:400}
+/* ===== copy-email button — mikedev.site exact (component D):
+   plain text button (walay pill na border), stone-400, gap-2, icon swap mail→check (scale .5↔1, text-primary),
+   label "→ Copied to clipboard" 1800ms, hover: text stone-100 + underline-ish border-stone-500, mailto fallback */
+.copy-email{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;padding:0;font-family:var(--font);font-size:14px;line-height:22px;color:#a8a29e;cursor:pointer;transition:color .2s}
+.copy-email:hover{color:#f5f5f4}
+.copy-ic{position:relative;display:inline-flex;width:15px;height:15px;flex:none}
+.copy-ic span{position:absolute;inset:0;display:inline-flex;align-items:center;justify-content:center;opacity:1;transform:scale(1);transition:opacity .18s ease,transform .18s ease}
+.copy-ic .copy-ic-ok{color:var(--acc);opacity:0;transform:scale(.5)}
+.copy-email.copied .copy-ic-copy{opacity:0;transform:scale(.5)}
+.copy-email.copied .copy-ic-ok{opacity:1;transform:scale(1)}
+.copy-txt{white-space:nowrap;border-bottom:1px solid transparent;padding-bottom:1px;transition:border-color .2s}
+.copy-email:hover .copy-txt{border-color:#78716c}
+.copy-email svg{flex:none;vertical-align:0}

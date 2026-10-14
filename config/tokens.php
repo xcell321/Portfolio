@@ -6,7 +6,7 @@ return [
   'role'       => 'Full Stack Developer',
   'tagline'    => 'I design & build digital products that scale.',
   'location'   => 'Cebu City, PH',
-  'email'      => 'you@example.com',
+  'email'      => 'edsielursal22@gmail.com',
   'phone'      => '+63 900 000 0000',
 
   'social.github'   => 'https://github.com/xcell321',

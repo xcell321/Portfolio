@@ -1,9 +1,9 @@
 <section id="contact"><div class="wrap">
   <div class="kicker"><?=token('contact.kicker')?></div>
-  <h2 class="title rv"><?=token('contact.title')?></h2>
+  <h2 class="title rv"><?=split_title(token('contact.title'), 2)?></h2>
   <p style="color:var(--mut);max-width:640px;margin-bottom:16px">Have a product in mind, or just want to compare notes? Send the details and I'll reply within one business day with a clear next step.</p>
   <?php if ($msg_ok): ?><p style="background:rgba(240,189,122,.12);border:1px solid var(--acc);padding:12px;border-radius:12px;margin-bottom:12px"><?=e($msg_ok)?></p><?php endif; ?>
-  <div class="contact-grid">
+  <div class="contact-grid rv" data-rvd="0.08">
     <div>
       <p style="color:var(--mut)">Available for new work<br><?=icon('mail',14)?> <?=e(token('email'))?><br><?=icon('phone',14)?> <?=e(token('phone'))?><br><?=icon('pin',14)?> <?=e(token('location'))?> · Remote friendly</p>
       <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
