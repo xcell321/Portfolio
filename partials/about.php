@@ -27,7 +27,7 @@
   <h3 style="margin:26px 0 6px">Toolkit <small style="color:var(--mut)">— What I reach for daily. Go ahead, drag them.</small> <button class="btn ghost" style="padding:6px 14px" onclick="tidyUp()">Tidy up</button></h3>
   <div class="toolkit" id="toolkit">
     <?php
-    $slugs = ['PHP'=>'php','MySQL'=>'mysql','JavaScript'=>'javascript','Tailwind'=>'tailwindcss','Laravel'=>'laravel','Flutter'=>'flutter','Firebase'=>'firebase','Git'=>'git','Figma'=>'figma','XAMPP'=>'apachenetbeans','CSS3'=>'css3','HTML5'=>'html5'];
+    $slugs = ['PHP'=>'php','MySQL'=>'mysql','JavaScript'=>'javascript','Tailwind'=>'tailwindcss','Laravel'=>'laravel','Flutter'=>'flutter','Firebase'=>'firebase','Git'=>'git','Figma'=>'figma','XAMPP'=>'apache','CSS3'=>'css','HTML5'=>'html5'];
     foreach (token('toolkit', []) as $t):
       $slug = $slugs[$t] ?? '';
     ?><div class="tool"><?php if ($slug): ?><img src="https://cdn.simpleicons.org/<?=$slug?>/a8a29e" alt="" width="16" height="16" loading="lazy" onerror="this.remove()"> <?php endif; ?><?=e($t)?></div><?php endforeach; ?>

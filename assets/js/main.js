@@ -82,7 +82,7 @@ addEventListener('scroll',()=>{
 // apply scroll state on load too — mid-page reloads skip the scroll event, so the pill
 // must render immediately instead of waiting for the first wheel move
 (function(){const y=window.scrollY||window.pageYOffset||0;document.querySelector('.nav-in')?.classList.toggle('scrolled',y>24)})();
-const ACCENTS=[['Lime','#d4fd73'],['Mint','#6ee7b7'],['Sky','#7dd3fc'],['Violet','#c4b5fd'],['Pink','#f9a8d4'],['Peach','#fdba74'],['Sun','#fde047']];
+const ACCENTS=[['Lime','#d4fd73'],['Mint','#6ee7b7'],['Sky','#7dd3fc'],['Violet','#c4b5fd'],['Pink','#f9a8d4'],['Copper','#cf8a4b'],['Sapphire','#3b6fe0']];
 function paintSwatches(){
   const box=document.getElementById('swatches');if(!box||box.children.length)return;
   let cur=(localStorage.getItem('acc')||'#d4fd73').toLowerCase();
@@ -212,9 +212,35 @@ document.querySelectorAll('.proj').forEach(c=>{
   c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform=`perspective(900px) rotateX(${-y*5}deg) rotateY(${x*6}deg) translateY(-4px)`});
   c.addEventListener('mouseleave',()=>c.style.transform='');
 });
-// command palette Ctrl+K
-addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();document.getElementById('pal').classList.toggle('open')}});
-document.getElementById('pal')?.addEventListener('click',e=>{if(e.target.id==='pal')e.target.classList.remove('open')});
+// command palette — mikedev.site UI port (clean-room, UI only):
+// Ctrl+K toggle, "/" open, Esc close, ↑↓ navigate, Enter select
+let palIdx=0;
+function palOpts(){return [...document.querySelectorAll('#palList a')].filter(a=>a.style.display!=='none');}
+function palPaint(){
+  const items=palOpts();
+  if(palIdx>=items.length)palIdx=Math.max(0,items.length-1);
+  items.forEach((a,i)=>a.classList.toggle('act',i===palIdx));
+  const act=items[palIdx];
+  if(act)act.scrollIntoView({block:'nearest'});
+}
+function palLock(on){try{if(on){if(window.lenis&&window.lenis.stop)window.lenis.stop();document.body.style.overflow='hidden';}else{if(window.lenis&&window.lenis.start)window.lenis.start();document.body.style.overflow='';}}catch(e){}}
+function palOpen(){const p=document.getElementById('pal');p.classList.remove('closing');p.classList.add('open');palLock(true);const i=document.getElementById('palInput');i.value='';palFilter('');i.focus();requestAnimationFrame(()=>i.focus());setTimeout(()=>{if(document.getElementById('pal').classList.contains('open'))i.focus();},60);}
+function palClose(){const p=document.getElementById('pal');if(!p.classList.contains('open')||p.classList.contains('closing'))return;p.classList.add('closing');palLock(false);setTimeout(()=>{p.classList.remove('open','closing');},150);}
+function palPick(){
+  const a=palOpts()[palIdx];if(!a)return;
+  palClose();setTimeout(()=>a.click(),60);
+}
+function palKey(e){
+  if(e.key==='Escape'){e.preventDefault();palClose();}
+  else if(e.key==='ArrowDown'){e.preventDefault();const n=palOpts().length;palIdx=n?(palIdx+1)%n:0;palPaint();}
+  else if(e.key==='ArrowUp'){e.preventDefault();const n=palOpts().length;palIdx=n?(palIdx-1+n)%n:0;palPaint();}
+  else if(e.key==='Enter'){e.preventDefault();palPick();}
+}
+addEventListener('keydown',e=>{
+  const typing=e.target.matches&&e.target.matches('input,textarea,[contenteditable]');
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();document.getElementById('pal').classList.contains('open')?palClose():palOpen();}
+  else if(e.key==='/'&&!typing&&!document.getElementById('pal').classList.contains('open')){e.preventDefault();palOpen();}
+});
 // like - mikedev.site exact port (chunk 993-…): heart spring 500/15 (keyed remount),
 // count roll y ±100% .3s, canvas confetti count 40 gikan sa button center inig like,
 // liked = border accent/40 + bg accent/10 + text accent, busy = opacity .6
@@ -311,6 +337,21 @@ function setDuty(on){
   const c=document.getElementById('clock');
   function tick(){try{c.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Manila'})}catch(e){}}
   tick();setInterval(tick,30000);
+  // rotating status — parehas kang Mike: 6-hour slots aligned sa Manila time,
+  // mao nga mu-change gyud inig 12am / 6am / 12pm / 6pm, same status sa tanang bisita
+  (function(){
+    const el=document.getElementById('statusLine');
+    if(!el)return;
+    const STATUSES=['LATE-NIGHT GRINDS 🖥️','ALWAYS LEARNING ⌘','BUILDING PROJECTS ⚙️','WORKING ON MYSELF 🧠'];
+    function paint(){
+      let h;
+      try{h=parseInt(new Intl.DateTimeFormat('en-US',{hour:'numeric',hour12:false,timeZone:'Asia/Manila'}).format(new Date()),10)||0}
+      catch(e){h=new Date().getHours()}
+      const i=Math.floor(h/6)%STATUSES.length;
+      if(el.textContent!==STATUSES[i])el.textContent=STATUSES[i];
+    }
+    paint();setInterval(paint,60000);
+  })();
   const pc=document.getElementById('photoCard');
   // mikedev exact: 3D tilt sa pointer (±14° spring 150/18) + duty flip on hover/unhover
   // framer useSpring approximation: current value chases target via lerp .12/frame (≈ stiffness150/damping18 feel)
@@ -404,7 +445,7 @@ function sfx(name){
       if(now-_lastTap<45)return;
       _lastTap=now;
     }
-    if(name==='tap')tone({freq:1100,to:700,dur:.06,vol:.05});
+    if(name==='tap')tone({freq:1100,to:700,dur:.05,vol:.035});
     else if(name==='click')tone({freq:520,to:340,dur:.04,type:'triangle',vol:.03});
     else if(name==='pop'){tone({freq:260,to:900,dur:.12,type:'triangle',vol:.07});[.06,.11,.17].forEach(function(s,i){tone({freq:1500+350*i+200*Math.random(),start:s,dur:.09,vol:.025})});}
     else if(name==='chime'){tone({freq:1318.5,dur:.5,vol:.05});tone({freq:1975.5,start:.09,dur:.6,vol:.04});}
@@ -443,31 +484,43 @@ paintSound();
 // click fallback para sa keyboard (Enter) nga walay pointerdown.
 function tapEl(e){
   if(!e.target||!e.target.closest)return null;
-  const t=e.target.closest('.btn,a,button,.chip');
-  if(!t||t.closest('[data-sound="none"]'))return null;
-  return t;
+  if(e.target.closest('[data-sound="none"]'))return 'none';
+  const n=e.target.closest('button, a[href], [role="button"], [role="radio"], input[type="checkbox"], label, .chip');
+  if(n&&n.disabled)return 'none';
+  return n?'tap':'click';
 }
+// mikedev exact: left-button pointerdown, interactive → tap, background → click
 document.addEventListener('pointerdown',function(e){
-  if(!soundOn)return;
-  if(tapEl(e))sfx('tap');
+  if(!soundOn||e.button!==0)return;
+  const s=tapEl(e);
+  if(s&&s!=='none')sfx(s);
 },true);
 document.addEventListener('click',function(e){
   if(!soundOn||e.detail!==0)return;
-  if(tapEl(e))sfx('tap');
+  const s=tapEl(e);
+  if(s&&s!=='none')sfx(s);
 });
-// ---- command palette filter (mikedev.site: jump to all sections) ----
+// ---- command palette filter — group-aware (tago ang group kung walay match) ----
 function palFilter(q){
   q=(q||'').toLowerCase();
   document.querySelectorAll('#palList a').forEach(a=>{
     const t=(a.textContent+' '+(a.dataset.t||'')).toLowerCase();
     a.style.display=!q||t.includes(q)?'':'none';
   });
+  document.querySelectorAll('#palList .pal-group').forEach(g=>{
+    let el=g.nextElementSibling,vis=false;
+    while(el&&!el.classList.contains('pal-group')){
+      if(el.tagName==='A'&&el.style.display!=='none')vis=true;
+      el=el.nextElementSibling;
+    }
+    g.style.display=vis?'':'none';
+  });
+  palIdx=0;palPaint();
 }
 (function(){
-  // measured sa mikedev.site video (10fps pixel analysis):
-  // order scale. -> last. -> ship. -> scale…, period 2600ms,
+  // rotating words: Scale. -> Inspire. -> Evolve. -> Scale…, period 4000ms,
   // exit 200ms (y 0 -> -0.3em, opacity -> 0, blur -> 6px), gap ~70ms blank, enter 300ms (y +0.3em -> 0)
-  const words=['scale.','last.','ship.'];
+  const words=['Scale.','Inspire.','Evolve.'];
   const el=document.getElementById('rotWord');
   const sr=document.getElementById('rotSr');
   if(!el)return;
@@ -483,7 +536,7 @@ function palFilter(q){
       el.classList.add('rot-in');
       setTimeout(()=>el.classList.remove('rot-in'),320);
     },200);
-  },2600);
+  },4000);
 })();
 // ---- hero dot grid — mikedev.site EXACT port (de-minified module 67979, function v) ----
 // spacing 28 (1.6x sa low-end devices), repel radius 180, base dot = 1.2px rect @ rgba(255,255,255,.11),
@@ -630,10 +683,29 @@ function burstConfetti(x,y,n){
   });
 })();
 // ---- open-to-work sticker easter egg (1/5) + dark pop-toast sunod sa video ----
-function showPop(title,sub){
+function showPop(title,sub,ms){
   const t=document.getElementById('popToast');if(!t)return;
   t.innerHTML='<span class="pop-ic">✦</span><span class="pop-tx"><b>'+title+'</b><small>'+sub+'</small></span>';
-  t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2800);
+  t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),ms||2800);
+}
+function secretMuted(){try{return localStorage.getItem('edsiel-secrets-complete-muted')==='1'}catch(e){return false}}
+function muteSecretComplete(on){try{on?localStorage.setItem('edsiel-secrets-complete-muted','1'):localStorage.removeItem('edsiel-secrets-complete-muted')}catch(e){}}
+// secret hunt — mikedev exact texts: "Secret found" / "Already found this one" /
+// complete "You found every secret 🏆", body "<label> · <n>/5", chime + confetti 220 inig complete
+function secret(id){
+  const LABELS={sticker:'Popped the open-to-work sticker',konami:'Entered the Konami code',name:'Typed my name',sudo:'Tried to get root',wordmark:'Poked every letter'};
+  let got=[];try{got=JSON.parse(localStorage.getItem('edsiel-secrets')||'[]');if(!Array.isArray(got))got=[]}catch(e){got=[]}
+  got=got.filter(g=>LABELS[g]);
+  const isNew=got.indexOf(id)<0;
+  if(isNew){got.push(id);try{localStorage.setItem('edsiel-secrets',JSON.stringify(got))}catch(e){}}
+  const done=got.length>=5;
+  if(isNew&&typeof sfx==='function')sfx('chime');
+  if(done&&isNew&&typeof mikeConfetti==='function')mikeConfetti(innerWidth/2,innerHeight/3,220);
+  if(done&&secretMuted())return isNew;
+  const title=done?'You found every secret 🏆':isNew?'Secret found':'Already found this one';
+  const body=done?"Seriously impressive. Say hi through the contact form, I'd love to meet you.":LABELS[id]+' · '+got.length+'/5';
+  showPop(title,body+(done?'<label class="pop-mute"><input type="checkbox" onchange="muteSecretComplete(this.checked)"> Don\'t show this again</label>':''),done?5000:2800);
+  return isNew;
 }
 function popSticker(ev){
   if(ev)ev.stopPropagation();
@@ -643,12 +715,8 @@ function popSticker(ev){
   mikeConfetti(x,y,70);
   const badge=document.getElementById('stickerBadge');
   if(badge){badge.classList.remove('popped');void badge.offsetWidth;badge.classList.add('popped');setTimeout(()=>badge.classList.remove('popped'),600)}
-  if(n>=1){
-    showPop('Already found this one','Popped the open-to-work sticker · 1/5');
-  }else{
-    try{localStorage.setItem('sticker_pops','1')}catch(e){}
-    showPop('Easter egg found! 🎉','Popped the open-to-work sticker · 1/5');
-  }
+  if(!n){try{localStorage.setItem('sticker_pops','1')}catch(e){}}
+  secret('sticker');
 }
 // ============================================================
 // mikedev.site exact clone — ticklish wordmark letters + canvas confetti.
@@ -739,7 +807,7 @@ function popSticker(ev){
     if(!announced&&poked.size>=letters.length){
       announced=true;
       canvasConfetti({count:140});
-      showPop('Secret found! 🏆','Poked every letter of the name · the wordmark secret');
+      secret('wordmark');
     }
     if(reduced||!el.animate)return;
     const tilt=(Math.random()-.5)*24;   // ±12° random snap, exactly like mikedev
@@ -756,5 +824,28 @@ function popSticker(ev){
     // pointerenter + pointerdown — parehas sa mikedev (onPointerEnter + onPointerDown)
     s.addEventListener('pointerenter',()=>poke(s));
     s.addEventListener('pointerdown',()=>poke(s));
+  });
+})();
+// ---- typing secrets — mikedev exact: lowercase key match, skip sa inputs,
+// konami → confetti 160, name → confetti 100 (iya "mike", ato "edsiel")
+(function(){
+  const KON=['arrowup','arrowup','arrowdown','arrowdown','arrowleft','arrowright','arrowleft','arrowright','b','a'];
+  const seq=[];let nameBuf='',sudoBuf='';
+  addEventListener('keydown',e=>{
+    const t=e.target;
+    if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    const k=e.key.toLowerCase();
+    seq.push(k);if(seq.length>KON.length)seq.shift();
+    if(seq.length===KON.length&&KON.every((v,i)=>seq[i]===v)){
+      seq.length=0;
+      mikeConfetti(innerWidth/2,innerHeight/3,160);
+      secret('konami');
+    }
+    if(k.length===1){
+      nameBuf=(nameBuf+k).slice(-6);sudoBuf=(sudoBuf+k).slice(-4);
+      if(nameBuf==='edsiel'){nameBuf='';mikeConfetti(innerWidth/2,innerHeight/3,100);secret('name');}
+      if(sudoBuf==='sudo'){sudoBuf='';secret('sudo');}
+    }
   });
 })();
