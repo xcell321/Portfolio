@@ -293,7 +293,7 @@ async function like(ev){
     paintLiked(!!j.liked);
     animTotal(j.total);
     heartSpring();
-    if(j.liked&&btn){const t=btn.getBoundingClientRect();mikeConfetti(t.left+t.width/2,t.top+t.height/2,40)}
+    if(j.liked){sfx('pop');if(btn){const t=btn.getBoundingClientRect();mikeConfetti(t.left+t.width/2,t.top+t.height/2,40)}}
   }catch{
     toast('Dili ma-like karon, try balik unya.');
   }finally{liking=false;if(btn)btn.classList.remove('busy')}
@@ -366,6 +366,95 @@ function setDuty(on){
 // back to top — lenis-aware: duration 1.1 same sa anchor helper (mikedev exact)
 function toTop(){const l=window.lenis;if(l&&l.scrollTo){l.scrollTo(0,{duration:1.1})}else{scrollTo({top:0,behavior:'smooth'})}}
 function toast(m,action){const t=document.getElementById('toast');if(!t)return;t.innerHTML='';t.append(document.createTextNode(m));if(action&&action.label){const b=document.createElement('button');b.type='button';b.className='toast-act';b.textContent=action.label;b.onclick=()=>{t.classList.remove('show');if(action.fn)action.fn()};t.append(b)}t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
+// ---- sound effects toggle — mikedev.site behavior port (clean-room):
+// single speaker button, default OFF (volume-x), click = ON (volume) / OFF.
+// Walay external mp3 — WebAudio blip lang para sa UI clicks, saved sa localStorage.
+let soundOn=false;
+try{soundOn=localStorage.getItem('snd')==='1'}catch(e){}
+let _ac=null,_lastTap=0;
+function _ctx(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return null;
+    if(!_ac)_ac=new AC();
+    if(_ac.state==='suspended')_ac.resume();
+    return _ac;
+  }catch(e){return null}
+}
+// usa ka oscillator + gain envelope: hinay nga sulod (8ms), glide ngadto sa `to`, pagawas sa `dur`
+function tone(o){
+  const ctx=_ctx();if(!ctx)return;
+  const t0=ctx.currentTime+(o.start||0);
+  const osc=ctx.createOscillator(),g=ctx.createGain();
+  osc.type=o.type||'sine';
+  osc.frequency.setValueAtTime(o.freq,t0);
+  if(o.to)osc.frequency.exponentialRampToValueAtTime(o.to,t0+o.dur);
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(o.vol||0.05,t0+0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+o.dur);
+  osc.connect(g);g.connect(ctx.destination);
+  osc.start(t0);osc.stop(t0+o.dur+0.02);
+}
+// parehas pamati kang Mike: tap sa buttons, pop inig like, two-note jingle inig on/off
+function sfx(name){
+  if(name!=='on'&&name!=='off'&&!soundOn)return;
+  try{
+    if(name==='tap'||name==='click'){
+      const now=performance.now();
+      if(now-_lastTap<45)return;
+      _lastTap=now;
+    }
+    if(name==='tap')tone({freq:1100,to:700,dur:.06,vol:.05});
+    else if(name==='click')tone({freq:520,to:340,dur:.04,type:'triangle',vol:.03});
+    else if(name==='pop'){tone({freq:260,to:900,dur:.12,type:'triangle',vol:.07});[.06,.11,.17].forEach(function(s,i){tone({freq:1500+350*i+200*Math.random(),start:s,dur:.09,vol:.025})});}
+    else if(name==='chime'){tone({freq:1318.5,dur:.5,vol:.05});tone({freq:1975.5,start:.09,dur:.6,vol:.04});}
+    else if(name==='on'){tone({freq:660,dur:.08,vol:.05});tone({freq:990,start:.07,dur:.12,vol:.05});}
+    else if(name==='off'){tone({freq:990,dur:.08,vol:.04});tone({freq:560,start:.07,dur:.12,vol:.04});}
+  }catch(e){}
+}
+const _SVG_MUTE='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A1.4 1.4 0 0 1 5.4 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.4a1.4 1.4 0 0 1 1 .4l3.4 3.4a.7.7 0 0 0 1.2-.5z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>';
+const _SVG_VOL='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A1.4 1.4 0 0 1 5.4 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.4a1.4 1.4 0 0 1 1 .4l3.4 3.4a.7.7 0 0 0 1.2-.5z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.4 18.4a9 9 0 0 0 0-12.7"/></svg>';
+function paintSound(){
+  const b=document.getElementById('soundBtn');if(!b)return;
+  b.classList.toggle('on',soundOn);
+  b.setAttribute('aria-pressed',soundOn?'true':'false');
+  b.setAttribute('title',soundOn?'Sound on':'Sound off');
+  b.setAttribute('aria-label',soundOn?'Turn sound effects off':'Turn sound effects on');
+  b.innerHTML=soundOn?_SVG_VOL:_SVG_MUTE;
+}
+function toggleSound(ev){
+  if(ev)ev.stopPropagation();
+  soundOn=!soundOn;
+  try{soundOn?localStorage.setItem('snd','1'):localStorage.removeItem('snd')}catch(e){}
+  paintSound();
+  sfx(soundOn?'on':'off');
+}
+paintSound();
+// painit ang AudioContext sa unang gesture para dili ma-block sa browser ang mga async sounds (e.g. pop inig like)
+(function(){
+  let warmed=false;
+  function warm(){if(warmed)return;warmed=true;_ctx();}
+  addEventListener('pointerdown',warm,{once:true,passive:true});
+  addEventListener('keydown',warm,{once:true});
+})();
+// soft tap kada pindot kung naka-ON — parehas kang Mike:
+// ang naay data-sound="none" (sound toggle, like) excluded kay naa silay kaugalingong pop/on/off.
+// pointerdown (capture) para madungog bisan mo-abli ug bag-ong tab (GitHub/FB/LinkedIn);
+// click fallback para sa keyboard (Enter) nga walay pointerdown.
+function tapEl(e){
+  if(!e.target||!e.target.closest)return null;
+  const t=e.target.closest('.btn,a,button,.chip');
+  if(!t||t.closest('[data-sound="none"]'))return null;
+  return t;
+}
+document.addEventListener('pointerdown',function(e){
+  if(!soundOn)return;
+  if(tapEl(e))sfx('tap');
+},true);
+document.addEventListener('click',function(e){
+  if(!soundOn||e.detail!==0)return;
+  if(tapEl(e))sfx('tap');
+});
 // ---- command palette filter (mikedev.site: jump to all sections) ----
 function palFilter(q){
   q=(q||'').toLowerCase();

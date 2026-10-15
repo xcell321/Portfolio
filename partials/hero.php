@@ -8,8 +8,8 @@
   <!-- top meta row parehas sa screenshot -->
   <div class="hero-meta">
     <div class="pills">
-      <span class="pill"><span class="dot"></span><?=e(token('hero.badge'))?> <?=icon('arrow',14)?></span>
-      <button class="pill like<?=!empty($liked_now)?' liked':''?>" id="likePillTop" onclick="like(event)" title="Like" aria-label="<?=!empty($liked_now)?'Unlike':'Like'?> this portfolio" aria-pressed="<?=!empty($liked_now)?'true':'false'?>"><?=icon('heart',14)?> <span id="likeLabelTop"><?=!empty($liked_now)?'You liked this':'Like this portfolio'?></span> <span class="like-num" id="likeNumWrap"><span id="likeNumTop"><?=$like_total?></span></span></button>
+      <a class="pill" href="#contact"><span class="dot"></span><?=e(token('hero.badge'))?> <?=icon('arrow',14)?></a>
+      <button class="pill like<?=!empty($liked_now)?' liked':''?>" id="likePillTop" onclick="like(event)" data-sound="none" title="Like" aria-label="<?=!empty($liked_now)?'Unlike':'Like'?> this portfolio" aria-pressed="<?=!empty($liked_now)?'true':'false'?>"><?=icon('heart',14)?> <span id="likeLabelTop"><?=!empty($liked_now)?'You liked this':'Like this portfolio'?></span> <span class="like-num" id="likeNumWrap"><span id="likeNumTop"><?=$like_total?></span></span></button>
     </div>
     <div class="meta-mono"><?=e(strtoupper(token('location')))?> &nbsp;·&nbsp; <span id="clock">--:--</span> &nbsp;·&nbsp; BUILDING THINGS <?=icon('spark',13)?></div>
   </div>
