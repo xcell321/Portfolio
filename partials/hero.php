@@ -11,12 +11,12 @@
       <a class="pill" href="#contact"><span class="dot"></span><?=e(token('hero.badge'))?> <?=icon('arrow',14)?></a>
       <button class="pill like<?=!empty($liked_now)?' liked':''?>" id="likePillTop" onclick="like(event)" data-sound="none" title="Like" aria-label="<?=!empty($liked_now)?'Unlike':'Like'?> this portfolio" aria-pressed="<?=!empty($liked_now)?'true':'false'?>"><?=icon('heart',14)?> <span id="likeLabelTop"><?=!empty($liked_now)?'You liked this':'Like this portfolio'?></span> <span class="like-num" id="likeNumWrap"><span id="likeNumTop"><?=$like_total?></span></span></button>
     </div>
-    <div class="meta-mono"><?=e(strtoupper(token('location')))?> &nbsp;·&nbsp; <span id="clock">--:--</span> &nbsp;·&nbsp; BUILDING THINGS <?=icon('spark',13)?></div>
+    <div class="meta-mono"><?=e(strtoupper(token('location')))?> &nbsp;·&nbsp; <span id="clock">--:--</span> &nbsp;·&nbsp; <span id="statusLine">BUILDING THINGS</span></div>
   </div>
 
   <div class="hero-grid">
     <div class="hero-left">
-      <div class="script"><?=e(token('hero.welcome', 'welcome back! still ' . token('first_name')))?><svg class="squiggle-svg" viewBox="0 0 64 24" fill="none" aria-hidden="true"><path d="M2 12c8-8 14 6 22-2s12-6 18 0 12 4 18-2m0 0-6-4m6 4-3 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="script"><?=e(token('hero.welcome', 'welcome back! still ' . token('first_name')))?><svg class="squiggle-svg" viewBox="0 0 64 24" fill="none" aria-hidden="true"><path pathLength="1" d="M2 12c8-8 14 6 22-2s12-6 18 0 12 4 18-2m0 0-6-4m6 4-3 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <h1 class="mega"><span class="rise-line" style="--rise-i:0"><span>I design <span class="amp">&amp;</span> build</span></span><span class="rise-line" style="--rise-i:1"><span>digital products</span></span><span class="rise-line" style="--rise-i:2"><span>that <span class="rot-holder scale" id="rotHolder"><span class="rot-ghost" aria-hidden="true">Inspire.</span><span class="rot-view" aria-hidden="true"><span class="rot-word" id="rotWord"><?=e(token('hero.line3word', 'ship.'))?></span></span><span class="sr-only" id="rotSr"><?=e(token('hero.line3word', 'ship.'))?></span></span></span></span></h1>
     </div>
 
@@ -30,7 +30,7 @@
         <div class="photo-card" id="photoCard" title="hover me">
           <div class="photo"><img class="layer top" draggable="false" src="<?=e(token('photo.duty'))?>" style="object-position:<?=e(token('photo.duty_pos'))?>;--z:1.5" alt="<?=e(token('owner_name'))?> on duty" onerror="this.remove()"><img class="layer bot" draggable="false" src="<?=e(token('photo.off'))?>" style="object-position:<?=e(token('photo.off_pos'))?>;--z:1.1" alt="<?=e(token('owner_name'))?> off duty" onerror="this.remove()"><div class="photo-glow" id="photoGlow" aria-hidden="true"></div><div class="photo-foot"><div><b><?=e(token('owner_name'))?></b><small><?=e(token('role'))?></small></div><span class="onduty" id="dutyBadge">ON DUTY</span></div></div>
         </div>
-        <div class="hoverme"><svg width="34" height="26" viewBox="0 0 34 26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M28 22 C 18 22, 9 17, 8 6 M8 6 l-5 7 M8 6 l7 4"/></svg><span>hover me</span></div>
+        <p class="hoverme" aria-hidden="true"><svg viewBox="0 0 40 30" fill="none" aria-hidden="true"><path d="M38 25C24 27 10 21 8 4m0 0-5 6m5-6 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>hover me</p>
       </div>
     </div>
   </div>

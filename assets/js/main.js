@@ -82,7 +82,7 @@ addEventListener('scroll',()=>{
 // apply scroll state on load too — mid-page reloads skip the scroll event, so the pill
 // must render immediately instead of waiting for the first wheel move
 (function(){const y=window.scrollY||window.pageYOffset||0;document.querySelector('.nav-in')?.classList.toggle('scrolled',y>24)})();
-const ACCENTS=[['Lime','#d4fd73'],['Mint','#6ee7b7'],['Sky','#7dd3fc'],['Violet','#c4b5fd'],['Pink','#f9a8d4'],['Peach','#fdba74'],['Sun','#fde047']];
+const ACCENTS=[['Lime','#d4fd73'],['Mint','#6ee7b7'],['Sky','#7dd3fc'],['Violet','#c4b5fd'],['Pink','#f9a8d4'],['Copper','#cf8a4b'],['Sapphire','#3b6fe0']];
 function paintSwatches(){
   const box=document.getElementById('swatches');if(!box||box.children.length)return;
   let cur=(localStorage.getItem('acc')||'#d4fd73').toLowerCase();
@@ -337,6 +337,21 @@ function setDuty(on){
   const c=document.getElementById('clock');
   function tick(){try{c.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Manila'})}catch(e){}}
   tick();setInterval(tick,30000);
+  // rotating status — parehas kang Mike: 6-hour slots aligned sa Manila time,
+  // mao nga mu-change gyud inig 12am / 6am / 12pm / 6pm, same status sa tanang bisita
+  (function(){
+    const el=document.getElementById('statusLine');
+    if(!el)return;
+    const STATUSES=['LATE-NIGHT GRINDS 🖥️','ALWAYS LEARNING ⌘','BUILDING PROJECTS ⚙️','WORKING ON MYSELF 🧠'];
+    function paint(){
+      let h;
+      try{h=parseInt(new Intl.DateTimeFormat('en-US',{hour:'numeric',hour12:false,timeZone:'Asia/Manila'}).format(new Date()),10)||0}
+      catch(e){h=new Date().getHours()}
+      const i=Math.floor(h/6)%STATUSES.length;
+      if(el.textContent!==STATUSES[i])el.textContent=STATUSES[i];
+    }
+    paint();setInterval(paint,60000);
+  })();
   const pc=document.getElementById('photoCard');
   // mikedev exact: 3D tilt sa pointer (±14° spring 150/18) + duty flip on hover/unhover
   // framer useSpring approximation: current value chases target via lerp .12/frame (≈ stiffness150/damping18 feel)
