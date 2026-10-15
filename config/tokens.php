@@ -19,7 +19,7 @@ return [
   'hero.line1'    => 'I design & build',
   'hero.line2'    => 'digital products',
   'hero.line3'    => 'that ship.',
-  'hero.line3word'=> 'ship.',
+  'hero.line3word'=> 'Scale.',
   'hero.desc'     => 'I take web and mobile products from the first sketch to the shipped release, so nothing gets lost in the handoff.',
   'hero.cta_work'=> 'See selected work ↓',
   'hero.status'   => 'OPEN TO WORK • FREELANCING • COLLABS • hover me',

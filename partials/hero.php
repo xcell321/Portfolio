@@ -17,7 +17,7 @@
   <div class="hero-grid">
     <div class="hero-left">
       <div class="script"><?=e(token('hero.welcome', 'welcome back! still ' . token('first_name')))?><svg class="squiggle-svg" viewBox="0 0 64 24" fill="none" aria-hidden="true"><path d="M2 12c8-8 14 6 22-2s12-6 18 0 12 4 18-2m0 0-6-4m6 4-3 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      <h1 class="mega"><span class="rise-line" style="--rise-i:0"><span>I design <span class="amp">&amp;</span> build</span></span><span class="rise-line" style="--rise-i:1"><span>digital products</span></span><span class="rise-line" style="--rise-i:2"><span>that <span class="rot-holder scale" id="rotHolder"><span class="rot-ghost" aria-hidden="true">scale.</span><span class="rot-view" aria-hidden="true"><span class="rot-word" id="rotWord"><?=e(token('hero.line3word', 'ship.'))?></span></span><span class="sr-only" id="rotSr"><?=e(token('hero.line3word', 'ship.'))?></span></span></span></span></h1>
+      <h1 class="mega"><span class="rise-line" style="--rise-i:0"><span>I design <span class="amp">&amp;</span> build</span></span><span class="rise-line" style="--rise-i:1"><span>digital products</span></span><span class="rise-line" style="--rise-i:2"><span>that <span class="rot-holder scale" id="rotHolder"><span class="rot-ghost" aria-hidden="true">Inspire.</span><span class="rot-view" aria-hidden="true"><span class="rot-word" id="rotWord"><?=e(token('hero.line3word', 'ship.'))?></span></span><span class="sr-only" id="rotSr"><?=e(token('hero.line3word', 'ship.'))?></span></span></span></span></h1>
     </div>
 
     <div class="hero-right">

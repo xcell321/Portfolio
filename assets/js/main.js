@@ -503,10 +503,9 @@ function palFilter(q){
   palIdx=0;palPaint();
 }
 (function(){
-  // measured sa mikedev.site video (10fps pixel analysis):
-  // order scale. -> last. -> ship. -> scale…, period 2600ms,
+  // rotating words: Scale. -> Inspire. -> Evolve. -> Scale…, period 4000ms,
   // exit 200ms (y 0 -> -0.3em, opacity -> 0, blur -> 6px), gap ~70ms blank, enter 300ms (y +0.3em -> 0)
-  const words=['scale.','last.','ship.'];
+  const words=['Scale.','Inspire.','Evolve.'];
   const el=document.getElementById('rotWord');
   const sr=document.getElementById('rotSr');
   if(!el)return;
@@ -522,7 +521,7 @@ function palFilter(q){
       el.classList.add('rot-in');
       setTimeout(()=>el.classList.remove('rot-in'),320);
     },200);
-  },2600);
+  },4000);
 })();
 // ---- hero dot grid — mikedev.site EXACT port (de-minified module 67979, function v) ----
 // spacing 28 (1.6x sa low-end devices), repel radius 180, base dot = 1.2px rect @ rgba(255,255,255,.11),
