@@ -416,3 +416,23 @@ a.pill:hover{text-decoration:none}
 .copy-txt{white-space:nowrap;border-bottom:1px solid transparent;padding-bottom:1px;transition:border-color .2s}
 .copy-email:hover .copy-txt{border-color:#78716c}
 .copy-email svg{flex:none;vertical-align:0}
+/* ===== hand tracking — mikedev.site style (clean-room MediaPipe port) =====
+   top-left floating preview + skeleton overlay + hand cursor ring */
+.hand-btn.on{color:var(--acc);background:color-mix(in srgb,var(--acc) 15%,transparent)}
+.hand-panel{position:fixed;top:70px;left:16px;z-index:60;width:196px;background:rgba(20,20,23,.55);border:1px solid rgba(255,255,255,.12);border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);display:none;animation:pop .22s cubic-bezier(.3,1.4,.5,1)}
+.hand-panel.show{display:block}
+.hand-vid{position:relative;width:100%;aspect-ratio:4/3;background:transparent;overflow:hidden}
+.hand-vid video,.hand-vid canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.hand-vid video{opacity:1}
+.hand-bar{display:flex;align-items:center;gap:8px;padding:7px 6px 7px 11px;font-size:11px;font-weight:500;letter-spacing:.02em;color:#d6d3d1;background:rgba(10,10,12,.45);border-top:1px solid rgba(255,255,255,.06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.hand-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.8);flex:none;animation:handBlink 1.6s ease-in-out infinite}
+@keyframes handBlink{0%,100%{opacity:1}50%{opacity:.4}}
+.hand-bar small{margin-left:auto;color:#78716c;font-size:10px}
+.hand-close{margin-left:auto;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:transparent;color:#78716c;cursor:pointer;font-size:11px;line-height:1;transition:background .15s,color .15s}
+.hand-close:hover{background:rgba(255,255,255,.08);color:#e7e5e4}
+#handCursor{position:fixed;left:0;top:0;z-index:9999;width:26px;height:26px;margin:-13px 0 0 -13px;border:1.5px solid var(--acc);border-radius:50%;pointer-events:none;display:none;box-shadow:0 0 12px color-mix(in srgb,var(--acc) 60%,transparent);transition:background-color .12s ease;will-change:transform}
+#handCursor.show{display:block}
+#handCursor::after{content:'';position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:var(--acc)}
+#handCursor.pinch{background:color-mix(in srgb,var(--acc) 35%,transparent)}
+.hand-hover{outline:2px solid color-mix(in srgb,var(--acc) 70%,transparent)!important;outline-offset:2px;border-radius:8px}
+@media(max-width:640px){.hand-panel{width:160px;top:66px;left:10px}}
