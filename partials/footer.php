@@ -4,8 +4,7 @@
   <p style="color:var(--mut);font-size:12px;margin-top:6px">psst, the letters are ticklish.</p></div></footer>
 
 <div id="handPanel" class="hand-panel">
-  <div class="hand-vid"><video id="handVideo" playsinline muted></video><canvas id="handOverlay"></canvas></div>
-  <div class="hand-bar"><span class="hand-dot"></span>Hand Tracking<button class="hand-close" onclick="stopHandTracking()" aria-label="Close hand tracking">✕</button></div>
+  <div class="hand-vid"><video id="handVideo" playsinline muted></video><canvas id="handOverlay"></canvas><div id="handLoading" class="hand-loading"><span class="hand-load-box"><span class="hand-spin"></span><span class="hand-msg" id="handLoadMsg">Loading hand model…</span></span></div><div class="hand-bar"><div class="hand-left"><span class="hand-dot"></span>Hand Tracking</div><button class="hand-close" onclick="stopHandTracking()" aria-label="Disable hand tracking"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div></div>
 </div>
 <div id="handCursor" aria-hidden="true"></div>
 <a class="chat-fab" href="#contact" title="Chat" aria-label="Chat"><?=icon('chat',20)?></a>
@@ -28,5 +27,5 @@ window.stopHandTracking = window.stopHandTracking || function () {
   document.getElementById('handPanel')?.classList.remove('show');
 };
 </script>
-<script type="module" src="assets/js/hand-tracking.js?v=20261016f"></script>
+<script type="module" src="assets/js/hand-tracking.js?v=20261018c"></script>
 </body></html>
