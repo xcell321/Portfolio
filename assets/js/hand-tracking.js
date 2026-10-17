@@ -2,9 +2,14 @@
 // MediaPipe Tasks Vision HandLandmarker (CDN, no build step).
 // Move = index fingertip (lm 8) moves hand cursor.
 // Pinch (thumb 4 + index 8) = click. Feeds heroDots via synthetic pointermove.
-// Loading: inig click mo-play dayon ang camera (klaro ang nawng) ug gamay nga
-// loading pill na lang para sa hand tracker samtang nag-load ang model.
-import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm";
+// Loading (sama kang Mike): dark 80% overlay + spinner dayon inig-click;
+// camera-first — inig-live sa cam makita na ang face (dimmed) sa luyo
+// samtang nag-load ang hand model; smooth fade-out inig-ready.
+// Dynamic import (dili static) ang library — kung ma-block/hang ang CDN,
+// mo-load gihapon ni nga module ug makita ang red error sa panel + watchdog
+// messages, imbis dead module ug spinner nga walay katapusan.
+
+const LIB_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm";
 
 const CONN = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
@@ -29,26 +34,29 @@ let lastScrollY = 0;
 
 function $(id) { return document.getElementById(id); }
 
-// loading overlay sa sulod sa preview — dark cover samtang wala pa mo-start
-// ang camera (wala pay face), morag kang Mike; dili gina-block ang page
+// loading overlay sa sulod sa preview — morag kang Mike: dark 80% cover +
+// spinner samtang nag-load ang model; makita ra gihapon ang face (dimmed)
+// sa luyo inig-live sa camera kay camera-first man; dili blocking ang page
 function setStatus(msg, isErr) {
   const el = $("handLoading"), m = $("handLoadMsg");
   if (!el) return;
-  el.classList.remove("hide", "cam-on");
+  clearTimeout(el._fade);
+  el.classList.remove("hide", "fade");
   el.classList.toggle("err", !!isErr);
   if (m) m.textContent = msg;
 }
 
-// inig-live sa camera: transparent na ang cover, loading pill na lang ang
-// makita (spinner + text) — klaro gihapon ang face samtang nag-load ang model
-function setCamOn() {
-  const el = $("handLoading");
-  if (el) el.classList.add("cam-on");
-}
-
+// inig-ready: smooth fade-out (300ms) dayon display:none, pariha sa
+// AnimatePresence exit fade sa kang Mike
 function hideStatus() {
   const el = $("handLoading");
-  if (el) el.classList.add("hide");
+  if (!el) return;
+  clearTimeout(el._fade);
+  el.classList.add("fade");
+  el._fade = setTimeout(() => {
+    el.classList.add("hide");
+    el.classList.remove("fade");
+  }, 320);
 }
 
 function paintBtn(on) {
@@ -67,6 +75,7 @@ function ensureLandmarker() {
   if (landmarker) return Promise.resolve(landmarker);
   if (!lmP) {
     lmP = (async () => {
+      const { FilesetResolver, HandLandmarker } = await import(LIB_URL);
       const vision = await FilesetResolver.forVisionTasks(WASM_URL);
       landmarker = await HandLandmarker.createFromOptions(vision, {
         baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
@@ -101,6 +110,7 @@ async function startHand() {
   panel.classList.add("show");
   paintBtn(true);
   setStatus("Loading hand model…", false); // spinner dayon, dili maghuwat, dili blocking
+  let tCam = 0, tSlow = 0, tStuck = 0; // watchdog timers (messages lang, dili mo-cancel)
   try {
     // Mike style: CAMERA una — mo-play dayon ang preview (makita na ang nawng,
     // dimmed lang sa loading overlay) samtang ang model nag-load sa background
@@ -109,16 +119,24 @@ async function startHand() {
       audio: false
     });
     const modelP = ensureLandmarker(); // dunganon sa camera para walay wasted time
+    // kung dugay ang camera (pending pa ang permission prompt), naay guidance
+    // imbis hilom nga spinner — dili mo-cancel, sulti lang unsay buhaton
+    tCam = setTimeout(() => { if (my === gen && !stream) setStatus("Waiting for camera… click Allow in the address bar.", false); }, 8000);
     const s = await cam;
+    clearTimeout(tCam);
     if (my !== gen) { s.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); return; }
     stream = s;
     video.srcObject = s;
     await video.play();
     if (my !== gen) return;
-    // naa na ang face sa user (fixed 220×165 box, sama kang Mike) —
-    // gamay nga loading pill na lang ang hand tracker samtang nag-load ang model
-    setCamOn();
+    // camera live na — naa na ang face sa user (dimmed sa luyo sa 80% dark
+    // overlay, sama kang Mike) samtang nagpadayon ang loading sa hand model
+    setStatus("Camera ready — loading hand model…", false);
+    // watchdog messages samtang nag-load ang model (hinay/blocked nga net)
+    tSlow = setTimeout(() => { if (my === gen && loading) setStatus("Still loading hand model… slow connection?", false); }, 15000);
+    tStuck = setTimeout(() => { if (my === gen && loading) setStatus("Hand model stuck loading — check your internet connection.", true); }, 45000);
     await modelP;
+    clearTimeout(tSlow); clearTimeout(tStuck);
     if (my !== gen) return;
     running = true;
     loading = false;
@@ -129,6 +147,7 @@ async function startHand() {
     lastVideoTime = -1;
     loop();
   } catch (e) {
+    clearTimeout(tCam); clearTimeout(tSlow); clearTimeout(tStuck);
     if (my !== gen) return;
     loading = false;
     if (stream) { stream.getTracks().forEach(t => { try { t.stop(); } catch (_e) {} }); stream = null; }
@@ -141,7 +160,7 @@ async function startHand() {
     } else if (e && e.name === "NotFoundError") {
       setStatus("No camera found on this device.", true);
     } else {
-      setStatus("Couldn't start hand tracking. Check camera + connection.", true);
+      setStatus("Couldn't load hand tracking — check camera + internet, then retry.", true);
     }
   }
 }
