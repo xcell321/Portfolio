@@ -23,9 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact'])) {
   ];
   if ($data['name'] && $data['email'] && $data['message']) {
     save_message($pdo, $data);
-    $msg_ok = "Salamat {$data['name']}! Na-receive na nako. Reply ko within 1 business day. 💚";
+    $msg_ok = sprintf(token('contact.ok'), $data['name']);
   } else {
-    $msg_ok = 'Palihog kompletoha Name, Email, Message.';
+    $msg_ok = token('contact.err');
   }
 }
 

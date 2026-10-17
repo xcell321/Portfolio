@@ -12,7 +12,7 @@
 <body>
 <header class="site-header"><div class="header-pt">
 <nav class="nav-in" aria-label="Primary">
-  <a class="logo" href="#top" aria-label="Edsiel Ursal — back to top"><img src="assets/img/logo.svg" alt="" class="logo-img"><span class="logo-txt"><?=e(token('owner_name'))?></span></a>
+  <a class="logo" href="#top" aria-label="<?=e(token('owner_name'))?> — back to top"><img src="assets/img/logo.svg" alt="" class="logo-img"><span class="logo-txt"><?=e(token('owner_name'))?></span></a>
   <ul class="links" id="navLinks">
     <li><a href="#about"><?=token('nav.about')?></a></li>
     <li><a href="#projects"><?=token('nav.work')?></a></li>
@@ -25,9 +25,9 @@
     <div class="theme-wrap">
       <button class="icon-btn icon-square" id="themeDot" onclick="toggleTheme(event)" title="Change accent" aria-label="Accent color"><span class="icon-dot"></span></button>
       <div class="theme-pop" id="themePop">
-        <div class="theme-title">MAKE IT YOURS</div>
+        <div class="theme-title"><?=e(token('theme.title'))?></div>
         <div class="swatches" id="swatches"></div>
-        <div class="theme-note"><b id="themeName">Lime</b> · saved for your next visit</div>
+        <div class="theme-note"><b id="themeName">Lime</b> · <?=e(token('theme.note'))?></div>
       </div>
     </div>
     <button class="icon-btn icon-square" id="soundBtn" onclick="toggleSound(event)" title="Sound off" aria-label="Turn sound effects on" aria-pressed="false" data-sound="none"><?=icon('mute',16)?></button>

@@ -1,7 +1,13 @@
 <footer><div class="wrap">
-  <div class="foot"><span>Navigate: About · Work · Journey · Contact</span><span>© 2026 <?=e(token('owner_name'))?>. All rights reserved.</span></div>
-  <div class="big tickle" id="bigName" aria-label="<?=e(strtoupper(token('owner_name')))?>"><span>E</span><span>D</span><span>S</span><span>I</span><span>E</span><span>L</span><span>&nbsp;</span><span>U</span><span>R</span><span>S</span><span>A</span><span>L</span></div>
-  <p style="color:var(--mut);font-size:12px;margin-top:6px">psst, the letters are ticklish.</p></div></footer>
+  <div class="foot"><span><?=e(token('foot.nav_label'))?> <?=e(token('nav.about'))?> · <?=e(token('nav.work'))?> · <?=e(token('nav.journey'))?> · <?=e(token('nav.contact'))?></span><span>© <?=date('Y')?> <?=e(token('owner_name'))?>. <?=e(token('foot.rights'))?></span></div>
+  <?php
+  $big_name = '';
+  foreach (preg_split('//u', strtoupper(token('owner_name')), -1, PREG_SPLIT_NO_EMPTY) as $ch) {
+    $big_name .= '<span>' . ($ch === ' ' ? '&nbsp;' : e($ch)) . '</span>';
+  }
+  ?>
+  <div class="big tickle" id="bigName" aria-label="<?=e(strtoupper(token('owner_name')))?>"><?=$big_name?></div>
+  <p style="color:var(--mut);font-size:12px;margin-top:6px"><?=e(token('foot.tickle'))?></p></div></footer>
 
 <div id="handPanel" class="hand-panel">
   <div class="hand-vid"><video id="handVideo" playsinline muted></video><canvas id="handOverlay"></canvas><div id="handLoading" class="hand-loading"><span class="hand-load-box"><span class="hand-spin"></span><span class="hand-msg" id="handLoadMsg">Loading hand model…</span></span></div><div class="hand-bar"><div class="hand-left"><span class="hand-dot"></span>Hand Tracking</div><button class="hand-close" onclick="stopHandTracking()" aria-label="Disable hand tracking"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div></div>
@@ -16,7 +22,7 @@
 const services=<?=json_encode(token('services', []))?>;
 document.getElementById('mq').innerHTML=(services.map(s=>`<li><span class="t">${s}</span><span class="sep">✦</span></li>`).join('')).repeat(4);
 </script>
-<script src="assets/js/main.js?v=20261015z"></script>
+<script src="assets/js/main.js?v=20261018a"></script>
 <script>
 // stub para dili mag-ReferenceError ang nav hand button samtang nag-load pa ang ES module
 window.toggleHandTracking = window.toggleHandTracking || function () {

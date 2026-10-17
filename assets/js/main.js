@@ -240,8 +240,10 @@ addEventListener('keydown',e=>{
 // liked = border accent/40 + bg accent/10 + text accent, busy = opacity .6
 function paintLiked(liked){
   const b=document.getElementById('likePillTop');
-  if(b){b.classList.toggle('liked',liked);b.setAttribute('aria-pressed',liked?'true':'false');b.setAttribute('aria-label',(liked?'Unlike':'Like')+' this portfolio')}
-  const lt=document.getElementById('likeLabelTop');if(lt)lt.textContent=liked?'You liked this':'Like this portfolio';
+  const labOn=(b&&b.dataset.on)||'You liked this';
+  const labOff=(b&&b.dataset.off)||'Like this portfolio';
+  if(b){b.classList.toggle('liked',liked);b.setAttribute('aria-pressed',liked?'true':'false');b.setAttribute('aria-label',liked?'Unlike':labOff)}
+  const lt=document.getElementById('likeLabelTop');if(lt)lt.textContent=liked?labOn:labOff;
   try{liked?localStorage.setItem('liked','1'):localStorage.removeItem('liked')}catch(e){}
 }
 function paintTotal(total){
@@ -324,7 +326,7 @@ async function like(ev){
 function setDuty(on){
   const badge=document.getElementById('dutyBadge'),card=document.getElementById('photoCard');
   if(!badge||!card)return;
-  badge.textContent=on?'ON DUTY':'OFF DUTY';
+  badge.textContent=on?(badge.dataset.on||'ON DUTY'):(badge.dataset.off||'OFF DUTY');
   card.classList.toggle('off',!on);
 }
 (function(){
@@ -502,10 +504,12 @@ function palFilter(q){
 (function(){
   // rotating words: Scale. -> Inspire. -> Evolve. -> Scale…, period 4000ms,
   // exit 200ms (y 0 -> -0.3em, opacity -> 0, blur -> 6px), gap ~70ms blank, enter 300ms (y +0.3em -> 0)
-  const words=['Scale.','Inspire.','Evolve.'];
   const el=document.getElementById('rotWord');
-  const sr=document.getElementById('rotSr');
   if(!el)return;
+  let words=['Scale.','Inspire.','Evolve.'];
+  try{const w=JSON.parse(el.dataset.words||'null');if(Array.isArray(w)&&w.length)words=w}catch(e){}
+  const sr=document.getElementById('rotSr');
+  if(!words.length)return;
   let i=words.indexOf((el.textContent||'').trim());
   if(i<0)i=0;
   setInterval(()=>{
