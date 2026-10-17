@@ -363,7 +363,7 @@ function loop() {
   wasPinch = pinch;
 }
 
-// auto-stop when tab hidden (saves camera + battery)
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden && running) stopHand();
-});
+// NOTE: walay visibilitychange/auto-stop — sama kang Mike, magpadayon ang
+// hand tracking (face + camera) bisan mo-alt-tab o mo-switch tab ang user.
+// Ang rAF loop natural ra mo-pause sa hidden tab ug mo-resume inig-balik,
+// apan dili ma-close ang panel ug dili mo-stop ang camera stream.

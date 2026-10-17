@@ -27,5 +27,5 @@ window.stopHandTracking = window.stopHandTracking || function () {
   document.getElementById('handPanel')?.classList.remove('show');
 };
 </script>
-<script type="module" src="assets/js/hand-tracking.js?v=20261018e"></script>
+<script type="module" src="assets/js/hand-tracking.js?v=20261018f"></script>
 </body></html>
