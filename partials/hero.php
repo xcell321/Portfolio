@@ -38,7 +38,7 @@ $statusNow   = $statusLines[intdiv($statusHour, 6) % max(1, count($statusLines))
         <div class="spin-badge" id="stickerBadge" onclick="popSticker(event)" title="Pssst… click me" style="cursor:pointer" aria-hidden="true">
           <svg viewBox="0 0 120 120"><defs><path id="cir" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0"/></defs>
           <text><textPath href="#cir"><?=e(token('hero.sticker'))?></textPath></text></svg>
-          <span class="wave"><?=icon('hand',30)?></span>
+          <span class="wave">👋</span>
         </div>
         <div class="photo-card" id="photoCard" title="<?=e(token('hero.hover'))?>">
           <div class="photo"><img class="layer top" draggable="false" src="<?=e(token('photo.duty'))?>" style="object-position:<?=e(token('photo.duty_pos'))?>;--z:1.5" alt="<?=e(token('owner_name'))?> on duty" onerror="this.remove()"><img class="layer bot" draggable="false" src="<?=e(token('photo.off'))?>" style="object-position:<?=e(token('photo.off_pos'))?>;--z:1.1" alt="<?=e(token('owner_name'))?> off duty" onerror="this.remove()"><div class="photo-glow" id="photoGlow" aria-hidden="true"></div><div class="photo-foot"><div><b><?=e(token('owner_name'))?></b><small><?=e(token('role'))?></small></div><span class="onduty" id="dutyBadge" data-on="<?=e(token('hero.duty_on'))?>" data-off="<?=e(token('hero.duty_off'))?>"><?=e(token('hero.duty_on'))?></span></div></div>
