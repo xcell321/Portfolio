@@ -1031,13 +1031,30 @@ function popSticker(ev){
     ta.disabled=busy;
     syncFab();
   }
+  let fabState=null, fabT=0;
+  // framer AnimatePresence mode="wait" — old icon exits (.2s) una, dayon bag-o mo-enter (.2s)
+  function setFabIcon(state){
+    if(state===fabState)return;
+    const prev=fabState; fabState=state;
+    const svg=IC[state]||IC.open||'';
+    const nm=c=>c==='close'?'Close':c==='send'?'Send':'Open';
+    const swap=()=>{
+      fabIc.innerHTML=svg;
+      fabIc.style.animation='none';void fabIc.offsetWidth;
+      fabIc.style.animation='aiIcIn'+nm(state)+' .2s ease-out forwards';
+    };
+    clearTimeout(fabT);
+    if(prev==null){swap();return;}
+    fabIc.style.animation='aiIcOut'+nm(prev)+' .2s ease-out forwards';
+    fabT=setTimeout(swap,200);
+  }
   function syncFab(){
     const scrolled=window.scrollY>100;
     const canPeek=scrolled&&!open&&!mobile;
     fab.classList.toggle('peek',canPeek);
     inline.classList.toggle('show',canPeek);
     const state=open?'close':(canPeek&&inlineInput.value.trim()?'send':'open');
-    fabIc.innerHTML=IC[state]||IC.open||'';
+    setFabIcon(state);
     fabBtn.setAttribute('aria-label',state==='close'?'Close AI chat':state==='send'?'Send message':'Toggle AI chat');
   }
   function openChat(){

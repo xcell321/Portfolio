@@ -14,22 +14,24 @@
 </div>
 <div id="handCursor" aria-hidden="true"></div>
 <?php
-// AI chat icons — mikedev module 22165 exact (lucide MessageCircleQuestion / Send / X)
+// AI chat icons — mikedev module 22165 exact.
+// l = MessageCircleQuestion (inline peek input + header avatar)  |  module 5937 = MessageCircle (fab open + avatar)  |  Send  |  X
 $aiIcons = [
   'open'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>',
+  'circle'=> '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>',
   'send'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>',
   'close' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
 ];
 ?>
 <div class="ai-widget" id="aiWidget" data-owner="<?=e(token('first_name'))?>">
   <div class="ai-fab" id="aiFab">
-    <div class="ai-inline" id="aiInline" aria-hidden="true"><span class="ai-inline-ic" id="aiInlineIc"></span><input type="text" id="aiInlineInput" placeholder="Ask me anything..." autocomplete="off"></div>
-    <button class="ai-fab-btn" id="aiFabBtn" aria-label="Toggle AI chat"><span class="ai-fab-ic" id="aiFabIc"><?=$aiIcons['open']?></span></button>
+    <div class="ai-inline" id="aiInline" aria-hidden="true"><span class="ai-inline-ic" id="aiInlineIc"><?=$aiIcons['open']?></span><input type="text" id="aiInlineInput" placeholder="Ask me anything..." autocomplete="off"></div>
+    <button class="ai-fab-btn" id="aiFabBtn" aria-label="Toggle AI chat"><span class="ai-fab-ic" id="aiFabIc"><?=$aiIcons['circle']?></span></button>
   </div>
   <div class="ai-ov" id="aiOv"></div>
   <div class="ai-panel" id="aiPanel" role="dialog" aria-modal="true" aria-label="AI chat">
     <div class="ai-head">
-      <div class="ai-head-info"><div class="ai-avatar" id="aiAvatar"><?=$aiIcons['open']?></div><div><h3><?=e(token('first_name'))?>'s AI Assistant</h3><p>Ask anything...</p></div></div>
+      <div class="ai-head-info"><div class="ai-avatar" id="aiAvatar"><?=$aiIcons['circle']?></div><div><h3><?=e(token('first_name'))?>'s AI Assistant</h3><p>Ask anything...</p></div></div>
       <button class="ai-close" id="aiClose" aria-label="Close chat"><?=$aiIcons['close']?></button>
     </div>
     <div class="ai-msgs" id="aiMsgs"></div>
@@ -80,9 +82,9 @@ $palIcons['corner'] = icon('corner',14);
 <script>
 window.PAL=<?=json_encode($palData, JSON_UNESCAPED_SLASHES|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?>;
 window.PAL_ICONS=<?=json_encode($palIcons, JSON_UNESCAPED_SLASHES|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?>;
-window.AI_ICONS={open:<?=json_encode($aiIcons['open'])?>,send:<?=json_encode($aiIcons['send'])?>,close:<?=json_encode($aiIcons['close'])?>};
+window.AI_ICONS={open:<?=json_encode($aiIcons['circle'])?>,send:<?=json_encode($aiIcons['send'])?>,close:<?=json_encode($aiIcons['close'])?>};
 </script>
-<script src="assets/js/main.js?v=20261018h"></script>
+<script src="assets/js/main.js?v=20261018i"></script>
 <script>
 // stub para dili mag-ReferenceError ang nav hand button samtang nag-load pa ang ES module
 window.toggleHandTracking = window.toggleHandTracking || function () {
