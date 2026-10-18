@@ -1,5 +1,5 @@
 <?php
-// SVG icons only — walay emoji. Gamit: icon('heart') sa partials.
+// SVG icons only — no emoji. Usage: icon('heart') in partials.
 
 function icon(string $name, int $size = 18): string {
   $s = $size;
@@ -46,7 +46,7 @@ function icon(string $name, int $size = 18): string {
   return '<svg width="'.$s.'" height="'.$s.'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$inner.'</svg>';
 }
 
-/** Daang emoji value -> icon name (para sa daan nga DB rows). */
+/** Map an old emoji value to an icon name (legacy DB rows). */
 function icon_for_emoji(?string $v): string {
   $map = ['🚀'=>'rocket','📊'=>'chart','📝'=>'note','🏗️'=>'building','🏗'=>'building','🛡️'=>'shield','🤖'=>'bot','🧠'=>'brain','📈'=>'chart','🏅'=>'award','👨🏻‍💻'=>'user','👨'=>'user'];
   return $map[$v] ?? 'spark';

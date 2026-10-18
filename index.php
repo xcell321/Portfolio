@@ -1,5 +1,5 @@
 <?php
-// Thin controller only. Walay HTML, walay SQL diri — compose ra.
+// Thin controller. No HTML or SQL here — compose only.
 require __DIR__ . '/lib/helpers.php';
 require __DIR__ . '/lib/icons.php';
 require __DIR__ . '/lib/database.php';
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gbook'])) {
 
 $guest_rows = get_guestbook($pdo);
 $like_total = get_likes($pdo);
-$liked_now  = has_liked($pdo); // 1 per person — para liked state sa first render
+$liked_now  = has_liked($pdo); // 1 per person — sets liked state on first render
 
 // --- view ---
 require __DIR__ . '/partials/head.php';

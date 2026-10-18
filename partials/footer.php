@@ -14,8 +14,7 @@
 </div>
 <div id="handCursor" aria-hidden="true"></div>
 <?php
-// AI chat icons — mikedev module 22165 exact.
-// l = MessageCircleQuestion (inline peek input + header avatar)  |  module 5937 = MessageCircle (fab open + avatar)  |  Send  |  X
+// AI chat icons: MessageCircleQuestion (inline peek input), MessageCircle (fab open + avatar), Send, X.
 $aiIcons = [
   'open'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>',
   'circle'=> '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>',
@@ -84,9 +83,9 @@ window.PAL=<?=json_encode($palData, JSON_UNESCAPED_SLASHES|JSON_HEX_TAG|JSON_HEX
 window.PAL_ICONS=<?=json_encode($palIcons, JSON_UNESCAPED_SLASHES|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?>;
 window.AI_ICONS={open:<?=json_encode($aiIcons['circle'])?>,send:<?=json_encode($aiIcons['send'])?>,close:<?=json_encode($aiIcons['close'])?>};
 </script>
-<script src="assets/js/main.js?v=20261018i"></script>
+<script src="assets/js/main.js?v=20261018l"></script>
 <script>
-// stub para dili mag-ReferenceError ang nav hand button samtang nag-load pa ang ES module
+// stub so the nav hand button doesn't ReferenceError while the ES module loads
 window.toggleHandTracking = window.toggleHandTracking || function () {
   var t = document.getElementById('toast');
   if (t) { t.textContent = 'Loading hand model… try again in 2s.'; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(function(){t.classList.remove('show')}, 2000); }
@@ -95,5 +94,5 @@ window.stopHandTracking = window.stopHandTracking || function () {
   document.getElementById('handPanel')?.classList.remove('show');
 };
 </script>
-<script type="module" src="assets/js/hand-tracking.js?v=20261018f"></script>
+<script type="module" src="assets/js/hand-tracking.js?v=20261018h"></script>
 </body></html>

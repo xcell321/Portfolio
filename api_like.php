@@ -14,7 +14,7 @@ if ($method === 'GET') {
   exit;
 }
 
-// POST: basaha ang action (like|unlike|toggle), default toggle
+// POST: read the action (like|unlike|toggle), default toggle
 $action = 'toggle';
 $raw = file_get_contents('php://input');
 if ($raw) {

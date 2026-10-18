@@ -1,5 +1,5 @@
-/* Self-hosted fonts — walay external requests.
-   Dili na mo-usab ang font bisan spam refresh / offline ang Google Fonts. */
+/* Self-hosted fonts — no external requests.
+      The font stays stable across refreshes and offline (no Google Fonts). */
 /* latin-ext */
 @font-face {
   font-family: 'Bricolage Grotesque';

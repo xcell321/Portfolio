@@ -5,7 +5,7 @@
   <div class="hero-vignette" aria-hidden="true"></div>
   <div class="hero-fade" aria-hidden="true"></div>
   <div class="wrap hero-inner">
-  <!-- top meta row parehas sa screenshot -->
+  <!-- top meta row -->
   <div class="hero-meta">
     <div class="pills">
       <a class="pill" href="#contact"><span class="dot"></span><?=e(token('hero.badge'))?> <?=icon('arrow',14)?></a>
@@ -20,8 +20,8 @@
       <?php
       $rot = array_values((array)token('hero.rot', ['Scale.', 'Inspire.', 'Evolve.']));
       $rot0 = $rot[0] ?? 'Inspire.';
-      // ghost = pinakataas nga word — maoy nag-set sa width sa holder;
-      // kung mubo ra ang ghost, ma-clip (overflow:hidden) ang mas tag-as nga words
+      // ghost = tallest word — it sets the holder width;
+      // if the ghost is too short, taller words get clipped (overflow:hidden)
       $rotLong = (string)$rot0;
       foreach ($rot as $w) { if (strlen((string)$w) > strlen($rotLong)) $rotLong = (string)$w; }
       ?>

@@ -1,4 +1,4 @@
--- Import sa phpMyAdmin OR: mysql -u root portfolio_db < schema.sql
+-- Import via phpMyAdmin OR: mysql -u root portfolio_db < schema.sql
 CREATE DATABASE IF NOT EXISTS portfolio_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE portfolio_db;
 
@@ -71,13 +71,13 @@ CREATE TABLE IF NOT EXISTS site_like_voters (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- default admin: username admin / password admin123 (ILISI DAYON!)
+-- default admin: username admin / password admin123 (CHANGE THIS NOW!)
 -- password_hash generated via: password_hash('admin123', PASSWORD_DEFAULT)
 INSERT IGNORE INTO admin_users (username,password_hash) VALUES
 ('admin','$2y$10$wHk2KcQeYx6l8m3n5p7r9uQvW3x5y7z9a1b3c5d7e9f1g3h5i7j9k1m');
 
 INSERT IGNORE INTO projects (num,role,year,title,`desc`,tags,live_url,emoji,sort_order) VALUES
-('01','Founder · Full Stack','2026','Project Alpha','Ilisi ni sa admin ug imong tinuod nga project.','PHP,MySQL,Tailwind','#','🚀',1),
-('02','Freelance · Web App','2025','Project Beta','Dugang/edit via Admin > Projects.','PHP,JavaScript,CSS','#','📊',2),
-('03','Personal · UI/UX','2025','Project Gamma','Tanan text imoha ra.','Figma,PHP,MySQL','#','📝',3),
-('04','Client Work · Website','2024','Project Delta','Showcase para sa client work.','PHP,Bootstrap,MySQL','#','🏗️',4);
+('01','Founder · Full Stack','2026','Project Alpha','Replace this in Admin with your real project.','PHP,MySQL,Tailwind','#','🚀',1),
+('02','Freelance · Web App','2025','Project Beta','Add/edit via Admin > Projects.','PHP,JavaScript,CSS','#','📊',2),
+('03','Personal · UI/UX','2025','Project Gamma','All text is yours to edit.','Figma,PHP,MySQL','#','📝',3),
+('04','Client Work · Website','2024','Project Delta','Showcase for client work.','PHP,Bootstrap,MySQL','#','🏗️',4);

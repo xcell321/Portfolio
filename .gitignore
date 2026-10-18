@@ -1,2 +1,2 @@
-# Production DB credentials sa deployment host — dili i-commit
+# Production DB credentials on the deploy host — do not commit
 config/db.local.php

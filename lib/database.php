@@ -1,9 +1,9 @@
 <?php
-// DB connection only. Walay queries diri.
-// WALAY hardcoded credentials dinhi — gikan sa environment variables
-// (DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_PORT) o sa config/db.local.php.
-// Priority: env vars > db.local.php. Kung walay config, null ang $pdo ug
-// mo-fallback gracefully ang site (fallback content, dili ma-crash).
+// DB connection only. No queries here.
+// No hardcoded credentials — read from environment variables
+// (DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_PORT) or config/db.local.php.
+// Priority: env vars > db.local.php. Without config, $pdo is null and
+// the site falls back gracefully (fallback content, no crash).
 
 function db_connect(): ?PDO {
   static $pdo = null;
@@ -29,10 +29,10 @@ function db_connect(): ?PDO {
     $pdo = new PDO($dsn, $cfg['user'] ?? '', $cfg['pass'] ?? '', [
       PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
       PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-      PDO::ATTR_TIMEOUT => 5 // kung mo-hang ang DB host, dili mag-stall ang page
+      PDO::ATTR_TIMEOUT => 5 // bail out if the DB host hangs instead of stalling the page
     ]);
   } catch (Exception $ex) {
-    $pdo = null; // graceful: site mogana gihapon via fallback data
+    $pdo = null; // graceful: the site still works via fallback data
   }
   return $pdo;
 }

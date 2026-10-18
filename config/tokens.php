@@ -1,5 +1,5 @@
 <?php
-// Pure data only. Walay logic, walay HTML. Diri ra mag-ilis ug text/links.
+// Pure data only. No logic, no HTML. Edit text/links here.
 return [
   'owner_name' => 'Edsiel Ursal',
   'first_name' => 'Edsiel',
@@ -32,10 +32,10 @@ return [
   'like.on'  => 'You liked this',
   'like.off' => 'Like this portfolio',
 
-  // hero photos — i-save ang files sa assets/img/ ani nga names
+  // hero photos — save files to assets/img/ with these names
   'photo.duty' => 'assets/img/me-duty.jpg',
   'photo.off'  => 'assets/img/me-off.jpg',
-  // focus sa nawng kada photo (x% y%)
+  // face focus per photo (x% y%)
   'photo.duty_pos' => '28% 78%',
   'photo.off_pos'  => '50% 18%',
 
@@ -97,8 +97,8 @@ return [
   'contact.f_note'    => 'This opens your mail app. Nothing is stored on this site.',
   'contact.need_chips'   => ['Web app', 'Mobile app', 'UI/UX design', 'Landing page', 'Something else'],
   'contact.budget_chips' => ['< $1k', '$1k – 5k', '$5k – 10k', '$10k+', 'Not sure yet'],
-  'contact.ok'  => 'Salamat %s! Na-receive na nako. Reply ko within 1 business day. 💚',
-  'contact.err' => 'Palihog kompletoha Name, Email, Message.',
+  'contact.ok'  => 'Thanks %s! I got your message. I\'ll reply within 1 business day. 💚',
+  'contact.err' => 'Please fill in Name, Email, and Message.',
 
   'foot.nav_label' => 'Navigate:',
   'foot.rights'    => 'All rights reserved.',

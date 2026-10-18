@@ -1,13 +1,13 @@
-// Hand tracking — mikedev.site style, clean-room port.
+// Hand tracking.
 // MediaPipe Tasks Vision HandLandmarker (CDN, no build step).
 // Move = index fingertip (lm 8) moves hand cursor.
 // Pinch (thumb 4 + index 8) = click. Feeds heroDots via synthetic pointermove.
-// Loading (sama kang Mike): dark 80% overlay + spinner dayon inig-click;
-// camera-first — inig-live sa cam makita na ang face (dimmed) sa luyo
-// samtang nag-load ang hand model; smooth fade-out inig-ready.
-// Dynamic import (dili static) ang library — kung ma-block/hang ang CDN,
-// mo-load gihapon ni nga module ug makita ang red error sa panel + watchdog
-// messages, imbis dead module ug spinner nga walay katapusan.
+// Loading: dark 80% overlay + spinner on click;
+// camera-first — when the camera goes live the face is visible (dimmed)
+// behind while the hand model loads; smooth fade-out when ready.
+// The library is a dynamic import — if the CDN is blocked/hangs,
+// this module still loads and shows the red error in the panel + watchdog
+// messages, instead of a dead module and an endless spinner.
 
 const LIB_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm";
 
@@ -16,10 +16,10 @@ const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmark
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 
 let landmarker = null;
-let lmP = null; // in-flight model load — shared aron usa ra ka download bisan pa-retry
+let lmP = null; // shared in-flight model load so retries reuse one download
 let running = false;
 let loading = false;
-let gen = 0; // session token — mang-invalidate sa in-flight loads inig stop
+let gen = 0; // session token — invalidates in-flight loads on stop
 let stream = null;
 let raf = 0;
 let lastVideoTime = -1;
@@ -34,9 +34,9 @@ let lastScrollY = 0;
 
 function $(id) { return document.getElementById(id); }
 
-// loading overlay sa sulod sa preview — morag kang Mike: dark 80% cover +
-// spinner samtang nag-load ang model; makita ra gihapon ang face (dimmed)
-// sa luyo inig-live sa camera kay camera-first man; dili blocking ang page
+// loading overlay inside the preview — dark 80% cover +
+// spinner while the model loads; the face still shows (dimmed)
+// behind once the camera goes live (camera-first); the page never blocks
 function setStatus(msg, isErr) {
   const el = $("handLoading"), m = $("handLoadMsg");
   if (!el) return;
@@ -46,8 +46,7 @@ function setStatus(msg, isErr) {
   if (m) m.textContent = msg;
 }
 
-// inig-ready: smooth fade-out (300ms) dayon display:none, pariha sa
-// AnimatePresence exit fade sa kang Mike
+// on ready: smooth fade-out (300ms) then display:none
 function hideStatus() {
   const el = $("handLoading");
   if (!el) return;
@@ -87,7 +86,7 @@ function ensureLandmarker() {
       });
       return landmarker;
     })();
-    lmP.catch(() => {}); // guard: kung ma-cancel samtang nag-load, walay unhandled rejection
+    lmP.catch(() => {}); // guard: if cancelled mid-load, no unhandled rejection
     lmP.then(() => { lmP = null; }, () => { lmP = null; });
   }
   return lmP;
@@ -98,29 +97,29 @@ async function startHand() {
   if (!panel || !video) return;
   if (running || loading) return;
   // warm audio INSIDE the real click gesture (before any await) —
-  // kung dili, suspended ang AudioContext ug silent tanang hand-click sounds
+  // otherwise the AudioContext stays suspended and all hand-click sounds are silent
   try { if (typeof window.warmAudio === "function") window.warmAudio(); } catch (e) {}
   // needs camera API (secure context + getUserMedia)
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     toastFallback("No camera API — use HTTPS / localhost with Chrome/Edge.");
     return;
   }
-  const my = ++gen; // token sa session — inig stop/cancel, stale na kining tanan nga awaits
+  const my = ++gen; // session token — in-flight awaits go stale after stop/cancel
   loading = true;
   panel.classList.add("show");
   paintBtn(true);
-  setStatus("Loading hand model…", false); // spinner dayon, dili maghuwat, dili blocking
-  let tCam = 0, tSlow = 0, tStuck = 0; // watchdog timers (messages lang, dili mo-cancel)
+  setStatus("Loading hand model…", false); // spinner first — no waiting, no blocking
+  let tCam = 0, tSlow = 0, tStuck = 0; // watchdog timers (messages only, they don't cancel)
   try {
-    // Mike style: CAMERA una — mo-play dayon ang preview (makita na ang nawng,
-    // dimmed lang sa loading overlay) samtang ang model nag-load sa background
+    // CAMERA first — the preview plays right away (the face is visible,
+    // dimmed only by the loading overlay) while the model loads in the background
     const cam = navigator.mediaDevices.getUserMedia({
       video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
       audio: false
     });
-    const modelP = ensureLandmarker(); // dunganon sa camera para walay wasted time
-    // kung dugay ang camera (pending pa ang permission prompt), naay guidance
-    // imbis hilom nga spinner — dili mo-cancel, sulti lang unsay buhaton
+    const modelP = ensureLandmarker(); // run alongside the camera so no time is wasted
+    // if the camera is slow (permission prompt still pending), show guidance
+    // instead of a silent spinner — don't cancel, just say what to do
     tCam = setTimeout(() => { if (my === gen && !stream) setStatus("Waiting for camera… click Allow in the address bar.", false); }, 8000);
     const s = await cam;
     clearTimeout(tCam);
@@ -129,10 +128,10 @@ async function startHand() {
     video.srcObject = s;
     await video.play();
     if (my !== gen) return;
-    // camera live na — naa na ang face sa user (dimmed sa luyo sa 80% dark
-    // overlay, sama kang Mike) samtang nagpadayon ang loading sa hand model
+    // camera is live — the user's face is now visible (dimmed behind the 80% dark
+    // overlay) while the hand model keeps loading
     setStatus("Camera ready — loading hand model…", false);
-    // watchdog messages samtang nag-load ang model (hinay/blocked nga net)
+    // watchdog messages while the model loads (slow/blocked network)
     tSlow = setTimeout(() => { if (my === gen && loading) setStatus("Still loading hand model… slow connection?", false); }, 15000);
     tStuck = setTimeout(() => { if (my === gen && loading) setStatus("Hand model stuck loading — check your internet connection.", true); }, 45000);
     await modelP;
@@ -153,8 +152,8 @@ async function startHand() {
     if (stream) { stream.getTracks().forEach(t => { try { t.stop(); } catch (_e) {} }); stream = null; }
     if (video) video.srcObject = null;
     console.warn("[hand]", e);
-    // panel magpabilin nga abli (Mike style) — error makita sa overlay in red
-    // imbis mo-close; click sa hand button o X para sirado/retry
+    // the panel stays open — the error shows in the overlay in red
+    // instead of closing; click the hand button or X to close/retry
     if (e && (e.name === "NotAllowedError" || e.name === "SecurityError")) {
       setStatus("Camera blocked — allow camera permission and try again.", true);
     } else if (e && e.name === "NotFoundError") {
@@ -166,7 +165,7 @@ async function startHand() {
 }
 
 function stopHand() {
-  gen++; // invalidate ang in-flight startHand (camera/model downloads)
+  gen++; // invalidate any in-flight startHand (camera/model downloads)
   running = false;
   loading = false;
   cancelAnimationFrame(raf);
@@ -187,8 +186,8 @@ function stopHand() {
 window.toggleHandTracking = function (ev) {
   if (ev) ev.stopPropagation();
   const panel = $("handPanel");
-  // sirado/open state ang basehan (dili lang running) — para pwede ma-cancel
-  // bisan nag-load pa o naay error nga overlay
+  // base the toggle on closed/open state (not just running) so it can cancel
+  // even while loading or showing an error overlay
   if (running || loading || (panel && panel.classList.contains("show"))) stopHand();
   else startHand();
 };
@@ -213,8 +212,7 @@ function accRgb() {
 function drawSkeleton(lms, pinch) {
   const cv = $("handOverlay");
   if (!cv) return;
-  // fixed 220×165 box (exact Mike size/radius) — ang canvas nag-fill sa box,
-  // x*w / y*h mapping sama sa kang Mike
+  // fixed 220×165 box — the canvas fills the box, raw x*w / y*h mapping
   const box = cv.parentElement.getBoundingClientRect();
   const w = Math.max(2, Math.round(box.width)), h = Math.max(2, Math.round(box.height));
   if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
@@ -290,7 +288,7 @@ function fireClick(x, y) {
     if (typeof window.sfx === "function") window.sfx("pop");
   } catch (e) {}
   try {
-    // detail:1 sama sa tinuod nga click — para dili mag-double ang tap sound sa main.js guard
+    // detail:1 mimics a real click — avoids a doubled tap sound from the main.js guard
     hit.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window, detail: 1, clientX: x, clientY: y }));
   } catch (e) {
     hit.click();
@@ -363,7 +361,7 @@ function loop() {
   wasPinch = pinch;
 }
 
-// NOTE: walay visibilitychange/auto-stop — sama kang Mike, magpadayon ang
-// hand tracking (face + camera) bisan mo-alt-tab o mo-switch tab ang user.
-// Ang rAF loop natural ra mo-pause sa hidden tab ug mo-resume inig-balik,
-// apan dili ma-close ang panel ug dili mo-stop ang camera stream.
+// NOTE: no visibilitychange / auto-stop — hand tracking keeps running
+// (face + camera) keeps running even when the user alt-tabs or switches tabs:
+// the rAF loop pauses in a hidden tab and resumes on return,
+// but the panel stays open and the camera stream is not stopped.

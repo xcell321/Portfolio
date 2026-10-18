@@ -1,5 +1,5 @@
 <?php
-// Small helpers. Walay DB diri, walay HTML.
+// Small helpers. No DB, no HTML.
 
 function app_tokens(): array {
   static $t = null;
@@ -17,13 +17,13 @@ function e($v): string {
   return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 }
 
-/** External link attrs — always new tab para dili matabunan portfolio. */
+/** External link attrs — always open in a new tab. */
 function ext(string $url): string {
   return 'href="' . e($url) . '" target="_blank" rel="noopener"';
 }
 
 /**
- * Two-tone section title — mikedev.site exact (T.w header):
+ * Two-tone section title:
  * first words plain, last N words dim (stone-500).
  * e.g. split_title('One partner, from concept to shipped release.', 3)
  *   => '<span>One partner, from concept</span> <span class=dim>to shipped release.</span>'

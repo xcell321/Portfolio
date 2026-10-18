@@ -1,9 +1,9 @@
 <?php
-// Template para sa deployment. Kopyaha kini nga file → config/db.local.php
-// dayon ilisi sa tinuod nga credentials gikan sa hosting provider nimo
-// (cPanel → MySQL Databases). Ang db.local.php kay git-ignored.
+// Deployment template. Copy this file to config/db.local.php
+// then fill in the real credentials from your hosting provider
+// (cPanel → MySQL Databases). db.local.php is git-ignored.
 //
-// ALTERNATIBA (walay file): i-set ang env vars sa .htaccess,
+// ALTERNATIVE (no file): set the env vars in .htaccess,
 //   SetEnv DB_HOST sql123.epizy.com
 //   SetEnv DB_NAME epiz_123_portfolio
 //   SetEnv DB_USER epiz_123
