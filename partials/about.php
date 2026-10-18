@@ -1,7 +1,7 @@
 <section id="about"><div class="wrap">
   <div class="kicker"><?=token('about.kicker')?></div>
   <h2 class="title rv"><?=split_title(token('about.title'), 3)?></h2>
-  <p class="rv" style="color:var(--mut);max-width:640px;margin:0 0 18px">I move between product strategy, interface design, and the engineering that powers production apps. You get fewer handoffs and a product that holds together.</p>
+  <p class="rv" style="color:var(--mut);max-width:640px;margin:0 0 18px"><?=e(token('about.lead'))?></p>
   <div style="display:flex;gap:8px;margin:0 0 22px;flex-wrap:wrap">
     <a class="btn ghost" <?=ext(token('social.github'))?>><?=icon('github',15)?> GitHub</a>
     <a class="btn ghost" <?=ext(token('social.linkedin'))?>><?=icon('linkedin',15)?> LinkedIn</a>
@@ -12,8 +12,8 @@
     <div class="card rv" data-rvd="0.06"><div class="card-ic"><?=icon('mobile',26)?></div><h3><?=token('about.card2_title')?></h3><p><?=token('about.card2_desc')?></p></div>
     <div class="card rv" data-rvd="0.12"><div class="card-ic"><?=icon('palette',26)?></div><h3><?=token('about.card3_title')?></h3><p><?=token('about.card3_desc')?></p></div>
   </div>
-  <h3 style="margin:26px 0 6px">Skills <small style="color:var(--mut)">— Tap a word to see where I've used it.</small></h3>
-  <p style="color:var(--mut);font-size:12px;margin:0 0 8px">always a work in progress · updated Oct 2026</p>
+  <h3 style="margin:26px 0 6px"><?=e(token('about.skills_title'))?> <small style="color:var(--mut)"><?=e(token('about.skills_note'))?></small></h3>
+  <p style="color:var(--mut);font-size:12px;margin:0 0 8px"><?=e(token('about.skills_updated'))?></p>
   <?php foreach (token('skills', []) as $i => $sk):
     $parts = array_map('trim', explode('/', $sk[1]));
     $cnt = count(array_filter($parts)); ?>
@@ -24,7 +24,7 @@
     </div></div>
   </div>
   <?php endforeach; ?>
-  <h3 style="margin:26px 0 6px">Toolkit <small style="color:var(--mut)">— What I reach for daily. Go ahead, drag them.</small> <button class="btn ghost" style="padding:6px 14px" onclick="tidyUp()">Tidy up</button></h3>
+  <h3 style="margin:26px 0 6px"><?=e(token('about.toolkit_title'))?> <small style="color:var(--mut)"><?=e(token('about.toolkit_note'))?></small> <button class="btn ghost" style="padding:6px 14px" onclick="tidyUp()"><?=e(token('about.toolkit_tidy'))?></button></h3>
   <div class="toolkit" id="toolkit">
     <?php
     $slugs = ['PHP'=>'php','MySQL'=>'mysql','JavaScript'=>'javascript','Tailwind'=>'tailwindcss','Laravel'=>'laravel','Flutter'=>'flutter','Firebase'=>'firebase','Git'=>'git','Figma'=>'figma','XAMPP'=>'apache','CSS3'=>'css','HTML5'=>'html5'];

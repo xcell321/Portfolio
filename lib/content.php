@@ -1,12 +1,12 @@
 <?php
-// Content fetchers + fallback. Tanan SQL naa ra diri, dili sa index.php.
+// Content fetchers + fallback. All SQL lives here, not in index.php.
 
 function fallback_projects(): array {
   return [
-    ['id'=>1,'num'=>'01','role'=>'Founder · Full Stack','year'=>'2026','title'=>'Project Alpha','desc'=>'Sample project. Ingna lang ko ug unsay ilisan ani.','tags'=>'PHP,MySQL,Tailwind','live_url'=>'#','case_url'=>'#','icon'=>'rocket'],
-    ['id'=>2,'num'=>'02','role'=>'Freelance · Web App','year'=>'2025','title'=>'Project Beta','desc'=>'Sample project. Ingna lang ko ug unsay idungag.','tags'=>'PHP,JavaScript,CSS','live_url'=>'#','case_url'=>'#','icon'=>'chart'],
-    ['id'=>3,'num'=>'03','role'=>'Personal · UI/UX','year'=>'2025','title'=>'Project Gamma','desc'=>'Sample project. Tanan description imoha ra.','tags'=>'Figma,PHP,MySQL','live_url'=>'#','case_url'=>'#','icon'=>'note'],
-    ['id'=>4,'num'=>'04','role'=>'Client Work · Website','year'=>'2024','title'=>'Project Delta','desc'=>'Sample project para sa client portfolio showcase.','tags'=>'PHP,Bootstrap,MySQL','live_url'=>'#','case_url'=>'#','icon'=>'building'],
+    ['id'=>1,'num'=>'01','role'=>'Founder · Full Stack','year'=>'2026','title'=>'Project Alpha','desc'=>'Sample project. Tell me what to replace here.','tags'=>'PHP,MySQL,Tailwind','live_url'=>'#','case_url'=>'#','icon'=>'rocket'],
+    ['id'=>2,'num'=>'02','role'=>'Freelance · Web App','year'=>'2025','title'=>'Project Beta','desc'=>'Sample project. Tell me what to add here.','tags'=>'PHP,JavaScript,CSS','live_url'=>'#','case_url'=>'#','icon'=>'chart'],
+    ['id'=>3,'num'=>'03','role'=>'Personal · UI/UX','year'=>'2025','title'=>'Project Gamma','desc'=>'Sample project. Every description is yours to edit.','tags'=>'Figma,PHP,MySQL','live_url'=>'#','case_url'=>'#','icon'=>'note'],
+    ['id'=>4,'num'=>'04','role'=>'Client Work · Website','year'=>'2024','title'=>'Project Delta','desc'=>'Sample project for a client portfolio showcase.','tags'=>'PHP,Bootstrap,MySQL','live_url'=>'#','case_url'=>'#','icon'=>'building'],
   ];
 }
 
@@ -20,11 +20,11 @@ function get_projects(?PDO $pdo): array {
 
 function get_timeline(?PDO $pdo): array {
   $fb = [
-    ['year'=>'Present','title'=>'Building the future','desc'=>'Nagpadayon ug learn ug build ug digital products.'],
-    ['year'=>'2024','title'=>'Full stack expertise','desc'=>'Nahanas sa PHP, MySQL, JS ug UI/UX.'],
-    ['year'=>'2023','title'=>'Professional growth','desc'=>'Ni-apil ug team, dagkong apps, databases.'],
-    ['year'=>'2022','title'=>'Expanded skills','desc'=>'Nakat-on ug modern web + freelancing.'],
-    ['year'=>'2021','title'=>'Started journey','desc'=>'Nagsugod sa HTML, CSS, JavaScript.'],
+    ['year'=>'Present','title'=>'Building the future','desc'=>'Continuing to learn and build digital products.'],
+    ['year'=>'2024','title'=>'Full stack expertise','desc'=>'Sharpened skills in PHP, MySQL, JS, and UI/UX.'],
+    ['year'=>'2023','title'=>'Professional growth','desc'=>'Joined a team; worked on large apps and databases.'],
+    ['year'=>'2022','title'=>'Expanded skills','desc'=>'Learned modern web development and freelancing.'],
+    ['year'=>'2021','title'=>'Started journey','desc'=>'Started with HTML, CSS, JavaScript.'],
   ];
   if (!$pdo) return $fb;
   try { $r = $pdo->query("SELECT * FROM timeline ORDER BY sort_order DESC")->fetchAll(); return $r ?: $fb; }
@@ -71,14 +71,14 @@ function save_guestbook(?PDO $pdo, string $name, string $msg): bool {
 }
 
 function bump_likes(?PDO $pdo): int {
-  // BC wrapper — karon 1 per person na. Default action = like once.
+  // BC wrapper — now 1 per person. Default action = like once.
   $r = toggle_like($pdo, 'like');
   return $r['total'];
 }
 
 function like_voter_hash(): string {
   $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-  // kung naay proxy chain, kuhaa ang first IP
+  // with a proxy chain, take the first IP
   $ip = trim(explode(',', (string)$ip)[0]);
   $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200);
   return hash('sha256', $ip . '|' . $ua);
@@ -104,7 +104,7 @@ function has_liked(?PDO $pdo): bool {
     $st = $pdo->prepare("SELECT 1 FROM site_like_voters WHERE voter_hash=? LIMIT 1");
     $st->execute([like_voter_hash()]);
     if ($st->fetchColumn()) {
-      // i-sync ang cookie para dili na mu-query sunod
+      // sync the cookie so later checks skip the query
       set_like_cookie();
       return true;
     }
@@ -145,7 +145,7 @@ function toggle_like(?PDO $pdo, string $action = 'toggle'): array {
       $ins = $pdo->prepare("INSERT IGNORE INTO site_like_voters(voter_hash) VALUES(?)");
       $ins->execute([$hash]);
       if ($ins->rowCount() === 0) {
-        // race: naunhan ug insert sa concurrent request, ayaw double-count
+        // race: a concurrent insert won first — don't double-count
         set_like_cookie();
         return ['total' => $total, 'liked' => true];
       }
@@ -164,7 +164,7 @@ function toggle_like(?PDO $pdo, string $action = 'toggle'): array {
       return ['total' => $total, 'liked' => false];
     }
 
-    // toggle (default sa button)
+    // toggle (default for the button)
     return $liked ? toggle_like($pdo, 'unlike') : toggle_like($pdo, 'like');
   } catch (Exception $ex) { return ['total' => 0, 'liked' => false]; }
 }

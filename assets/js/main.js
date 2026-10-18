@@ -1,10 +1,4 @@
-// ==========================================================================
-// smooth scroll — mikedev.site exact Lenis config (app-layout module, de-minified):
-// duration:.7, easing:t=>1-Math.pow(1-t,3) (easeOutCubic), orientation vertical,
-// gestureOrientation vertical, smoothWheel:true, wheelMultiplier:1.2,
-// touchMultiplier:1.5, infinite:false + rAF loop nga nag-pause sa hidden tab
-// (visibilitychange) — same pause guard as Mike's u() loop
-// ==========================================================================
+
 (function(){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   if('scrollingElement' in document===false)return;
@@ -28,7 +22,7 @@
       });
       window.lenis=lenis;
       function loop(time){
-        // Mike's exact guard: rAF keeps ticking but scrollTo/scroll aan pa sa hidden
+        // keep the rAF loop running; only pause lenis.raf while the tab is hidden
         if(!document.hidden&&!hidden)lenis.raf(time);
         raf=requestAnimationFrame(loop);
       }
@@ -40,9 +34,9 @@
   document.head.appendChild(s);
 })();
 // ==========================================================================
-// anchor clicks → lenis.scrollTo — mikedev.site exact (module 44359 o() helper):
+// anchor clicks → lenis.scrollTo:
 // 'top' → scrollTo(0,{duration:1.1}); targets → pos - 80px header offset, {duration:1.1}
-// native jump fallback kung wala pa na-load ang Lenis
+// native jump fallback if Lenis hasn't loaded yet
 // ==========================================================================
 document.addEventListener('click',function(e){
   const a=e.target.closest&&e.target.closest('a[href^="#"]');
@@ -61,16 +55,16 @@ document.addEventListener('click',function(e){
     window.scrollTo({top:y,behavior:'smooth'});
   }
 });
-// reveal on scroll — mikedev.site exact: viewport {once:true, margin:-60px};
-// stagger delay gikan sa data-rvd attribute → paint as --rvd CSS var (transition-delay)
+// reveal on scroll: viewport {once:true, margin:-60px};
+// stagger delay read from data-rvd → painted as the --rvd CSS var (transition-delay)
 (function(){
   document.querySelectorAll('.rv[data-rvd]').forEach(el=>{el.style.setProperty('--rvd',el.dataset.rvd+'s')});
   const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target)}})},{rootMargin:'-60px 0px -60px 0px'});
   document.querySelectorAll('.rv').forEach(el=>io.observe(el));
 })();
-// floating pill nav on scroll (mikedev.site style — transparent sa top, pill pag scroll)
+// floating pill nav on scroll (transparent at top, pill once scrolled)
 addEventListener('scroll',()=>{
-  // mikedev.site exact: nav starts fully transparent, becomes the pill only after scrolling >24px
+  // nav starts fully transparent, becomes the pill only after scrolling >24px
   const sc=scrollY>24;
   const nav=document.querySelector('.nav-in');
   if(nav&&!nav.classList.contains('force-pill'))nav.classList.toggle('scrolled',sc);
@@ -82,7 +76,7 @@ addEventListener('scroll',()=>{
 // apply scroll state on load too — mid-page reloads skip the scroll event, so the pill
 // must render immediately instead of waiting for the first wheel move
 (function(){const y=window.scrollY||window.pageYOffset||0;document.querySelector('.nav-in')?.classList.toggle('scrolled',y>24)})();
-const ACCENTS=[['Lime','#d4fd73'],['Mint','#6ee7b7'],['Sky','#7dd3fc'],['Violet','#c4b5fd'],['Pink','#f9a8d4'],['Copper','#cf8a4b'],['Sapphire','#3b6fe0']];
+const ACCENTS=[['Lime','#d4fd73'],['Mint','#6ee7b7'],['Sky','#7dd3fc'],['Violet','#c4b5fd'],['Pink','#f9a8d4'],['Peach','#fdba74'],['Sun','#fde047']];
 function paintSwatches(){
   const box=document.getElementById('swatches');if(!box||box.children.length)return;
   let cur=(localStorage.getItem('acc')||'#d4fd73').toLowerCase();
@@ -116,8 +110,8 @@ function paintSwatchesRefresh(h){
 function rgb2hex(v){const m=v.match(/\d+/g);if(!m||m.length<3)return v;return'#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join('')}
 function toggleTheme(e){if(e)e.stopPropagation();paintSwatches();document.getElementById('themePop').classList.toggle('open')}
 document.addEventListener('click',e=>{const p=document.getElementById('themePop');if(p&&p.classList.contains('open')&&!e.target.closest('.theme-wrap'))p.classList.remove('open')});
-// init sa load: kung unsay naka-select nga color, mao ra gyud nay mogawas inig refresh —
-// validate + apply + update sa picker label dayon (dili na maghuwat ug open sa picker)
+// On load apply the saved color immediately —
+// validate, apply, and update the picker label (no waiting for the picker to open)
 (function(){
   try{
     let h=(localStorage.getItem('acc')||'#d4fd73').toLowerCase();
@@ -127,7 +121,7 @@ document.addEventListener('click',e=>{const p=document.getElementById('themePop'
     if(found){const tn=document.getElementById('themeName');if(tn)tn.textContent=found[0]}
   }catch(e){}
 })();
-// nav mobile — mikedev exact: pill mu-show pud inig open sa menu (e||a)
+// nav mobile: pill also shows when the menu opens (e||a)
 function toggleNav(){
   const l=document.getElementById('navLinks');if(!l)return;
   l.classList.toggle('open');
@@ -135,16 +129,15 @@ function toggleNav(){
   if(l.classList.contains('open')){nav.classList.add('scrolled');nav.classList.add('force-pill')}
   else{nav.classList.remove('force-pill');nav.classList.toggle('scrolled',(window.scrollY||0)>24)}
 }
-// ---- active-section nav pill — mikedev.site exact ----
+// ---- active-section nav pill ----
 // IO rootMargin "-45% 0px -50% 0px" (center band of viewport) over #top + every nav target;
-// sliding pill bg-white/[.07] behind the active link (mikedev uses a framer spring:
-// stiffness 380 / damping 34 — approximated here with the same ease curve on left/width)
+// sliding pill bg-white/[.07] behind the active link (spring feel via the same ease curve on left/width)
 (function(){
   const list=document.querySelector('.links');
   if(!list)return;
   const links=[].slice.call(list.querySelectorAll('a[href^="#"]'));
   if(!links.length)return;
-  // sliding pill element (behind link text, same as mikedev's layoutId span)
+  // sliding pill element (behind the link text)
   const pill=document.createElement('span');
   pill.className='nav-pill';
   list.appendChild(pill);
@@ -166,7 +159,7 @@ function toggleNav(){
     pill.classList.remove('show');
   }
   function paint(){
-    // mikedev exact: "top" is observed too — active top = no link matches = pill hidden
+    // "top" is observed too — active top means no link matches, so the pill is hidden
     if(!active||active.getAttribute('href')==='#top'){clear();return}
     links.forEach(a=>a.classList.toggle('on',a===active));
     place(active);
@@ -174,8 +167,8 @@ function toggleNav(){
   const io=new IntersectionObserver(es=>{
     es.forEach(e=>{if(e.isIntersecting)active=byId[e.target.id]||null});
     paint();
-  },{rootMargin:'-45% 0px -50% 0px'});              // exact mikedev band
-  // top hero + every section — same list as mikedev (["top", ...sections])
+  },{rootMargin:'-45% 0px -50% 0px'});              // center viewport band
+  // top hero + every section (["top", ...sections])
   ['top'].concat(setId).forEach(id=>{const el=document.getElementById(id);if(el)io.observe(el)});
   // reposition on resize (pill is pixel-positioned); also re-place after fonts/layout settle
   addEventListener('resize',()=>{if(active)place(active)},{passive:true});
@@ -212,23 +205,93 @@ document.querySelectorAll('.proj').forEach(c=>{
   c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform=`perspective(900px) rotateX(${-y*5}deg) rotateY(${x*6}deg) translateY(-4px)`});
   c.addEventListener('mouseleave',()=>c.style.transform='');
 });
-// command palette — mikedev.site UI port (clean-room, UI only):
-// Ctrl+K toggle, "/" open, Esc close, ↑↓ navigate, Enter select
-let palIdx=0;
+// command palette:
+// groups Navigate/Projects/Actions/Accent color/Elsewhere (a group shows only when it has a match),
+// query filter over label+keywords+group, ↑↓ + hover index + scrollIntoView{block:'nearest'},
+// Enter/Escape, pick = close then run after 120ms, toast 1800ms,
+// open = focus input + lenis.stop + body lock, Ctrl/Cmd+K toggle, "/" open, window "open-command-palette" event.
+const OPEN_PAL_EVENT='open-command-palette';
+let palIdx=0, palToastT=0;
 function palOpts(){return [...document.querySelectorAll('#palList a')].filter(a=>a.style.display!=='none');}
 function palPaint(){
   const items=palOpts();
   if(palIdx>=items.length)palIdx=Math.max(0,items.length-1);
+  if(palIdx<0)palIdx=0;
   items.forEach((a,i)=>a.classList.toggle('act',i===palIdx));
   const act=items[palIdx];
   if(act)act.scrollIntoView({block:'nearest'});
 }
+function palToast(msg){
+  const t=document.getElementById('palToast');if(!t)return;
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(palToastT);palToastT=setTimeout(()=>t.classList.remove('show'),1800);   // toast 1800ms
+}
+function foundSecrets(){
+  const all=(window.PAL&&window.PAL.secrets)||[];
+  try{const g=JSON.parse(localStorage.getItem('edsiel-secrets')||'[]');return Array.isArray(g)?g.filter(x=>all.indexOf(x)>-1).length:0}catch(e){return 0}
+}
+function runPalAct(it){
+  if(it.act==='copy-email'){
+    const email=(window.PAL&&window.PAL.email)||'';
+    navigator.clipboard.writeText(email).then(()=>palToast('Email copied')).catch(()=>{window.location.href='mailto:'+email});
+  }else if(it.act==='send-email'){
+    window.location.href='mailto:'+((window.PAL&&window.PAL.email)||'');
+  }else if(it.act==='sound'){
+    toggleSound();palToast(soundOn?'Sounds on \uD83D\uDD0A':'Sounds off');
+  }else if(it.act==='confetti'){
+    canvasBurst(innerWidth/2,innerHeight/3,150);
+  }else if(it.act==='secrets'){
+    const total=((window.PAL&&window.PAL.secrets)||[]).length||5, found=foundSecrets();
+    palToast(found===total?'All secrets found \uD83C\uDFC6':found+'/'+total+' secrets found. Try `secrets` in the terminal for hints');
+  }else if(it.act==='accent'){
+    setAccent(it.accent,it.hex);palToast('Accent set to '+it.accent);
+  }
+}
+function buildPalette(){
+  const view=document.getElementById('palList');if(!view)return;
+  const D=window.PAL||{},IC=window.PAL_ICONS||{};
+  const svg=n=>IC[n]||'';
+  const groups=['Navigate','Projects','Actions','Accent color','Elsewhere'];
+  let raw=[];
+  (D.nav||[]).forEach(s=>raw.push({group:'Navigate',label:s.label,icon:'hash',keys:s.keys||s.id,href:'#'+s.id}));
+  (D.projects||[]).forEach(p=>raw.push({group:'Projects',label:p.title,hint:p.year,icon:'filetext',keys:((p.tags||'')+' '+(p.year||'')).toLowerCase(),href:'#projects'}));
+  raw.push({group:'Actions',label:'Copy email address',hint:D.email||'',icon:'copy',keys:'mail contact',act:'copy-email'});
+  raw.push({group:'Actions',label:'Send an email',icon:'send',keys:'mail contact hire',act:'send-email'});
+  raw.push({group:'Actions',label:'Toggle sound effects',icon:'volume',keys:'audio sfx mute unmute sounds',act:'sound'});
+  raw.push({group:'Actions',label:'Throw confetti',icon:'spark',keys:'party celebrate fun surprise',act:'confetti'});
+  raw.push({group:'Actions',label:'Secret hunt progress',hint:((D.secrets||[]).length||5)+' hidden',icon:'award',keys:'easter egg secret hidden konami',act:'secrets'});
+  ACCENTS.forEach(([n,h])=>raw.push({group:'Accent color',label:n+' accent',icon:'palette',keys:'theme color colour accent personalize',act:'accent',accent:n,hex:h}));
+  (D.socials||[]).forEach(s=>raw.push({group:'Elsewhere',label:s.name,icon:s.icon||'arrow',keys:'social link',href:s.href,ext:true}));
+  view.innerHTML='';
+  const empty=document.createElement('p');empty.className='pal-empty';empty.hidden=true;empty.innerHTML='Nothing matches \u201C<span></span>\u201D.';view.appendChild(empty);
+  groups.forEach(g=>{
+    const list=raw.filter(x=>x.group===g);if(!list.length)return;
+    const head=document.createElement('p');head.className='pal-group';head.textContent=g;view.appendChild(head);
+    list.forEach(it=>{
+      const a=document.createElement('a');a.className='pal-item';a.setAttribute('role','option');
+      if(it.href){a.href=it.href;if(it.ext){a.target='_blank';a.rel='noopener noreferrer'}}
+      else a.href='#';
+      a.innerHTML=svg(it.icon)+'<span></span>'+(it.hint?'<em></em>':'')+svg('corner');
+      a.querySelector('span').textContent=it.label;
+      if(it.hint)a.querySelector('em').textContent=it.hint;
+      a.dataset.t=(it.label+' '+(it.keys||'')+' '+it.group).toLowerCase();
+      if(it.act)a.dataset.act=it.act;
+      a.addEventListener('mousemove',()=>{palIdx=palOpts().indexOf(a);palPaint()});   // hover follows the cursor
+      a.addEventListener('click',e=>{
+        if(it.act){e.preventDefault();palClose();setTimeout(()=>runPalAct(it),120)}
+        else palClose();
+      });
+      view.appendChild(a);
+    });
+  });
+}
+buildPalette();
 function palLock(on){try{if(on){if(window.lenis&&window.lenis.stop)window.lenis.stop();document.body.style.overflow='hidden';}else{if(window.lenis&&window.lenis.start)window.lenis.start();document.body.style.overflow='';}}catch(e){}}
 function palOpen(){const p=document.getElementById('pal');p.classList.remove('closing');p.classList.add('open');palLock(true);const i=document.getElementById('palInput');i.value='';palFilter('');i.focus();requestAnimationFrame(()=>i.focus());setTimeout(()=>{if(document.getElementById('pal').classList.contains('open'))i.focus();},60);}
 function palClose(){const p=document.getElementById('pal');if(!p.classList.contains('open')||p.classList.contains('closing'))return;p.classList.add('closing');palLock(false);setTimeout(()=>{p.classList.remove('open','closing');},150);}
 function palPick(){
   const a=palOpts()[palIdx];if(!a)return;
-  palClose();setTimeout(()=>a.click(),60);
+  palClose();setTimeout(()=>a.click(),120);   // close then run after 120ms
 }
 function palKey(e){
   if(e.key==='Escape'){e.preventDefault();palClose();}
@@ -241,19 +304,22 @@ addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();document.getElementById('pal').classList.contains('open')?palClose():palOpen();}
   else if(e.key==='/'&&!typing&&!document.getElementById('pal').classList.contains('open')){e.preventDefault();palOpen();}
 });
-// like - mikedev.site exact port (chunk 993-…): heart spring 500/15 (keyed remount),
-// count roll y ±100% .3s, canvas confetti count 40 gikan sa button center inig like,
+addEventListener(OPEN_PAL_EVENT,palOpen);
+// like: heart spring (keyed remount), count roll y ±100% .3s,
+// canvas confetti count 40 from the button center on like,
 // liked = border accent/40 + bg accent/10 + text accent, busy = opacity .6
 function paintLiked(liked){
   const b=document.getElementById('likePillTop');
-  if(b){b.classList.toggle('liked',liked);b.setAttribute('aria-pressed',liked?'true':'false');b.setAttribute('aria-label',(liked?'Unlike':'Like')+' this portfolio')}
-  const lt=document.getElementById('likeLabelTop');if(lt)lt.textContent=liked?'You liked this':'Like this portfolio';
+  const labOn=(b&&b.dataset.on)||'You liked this';
+  const labOff=(b&&b.dataset.off)||'Like this portfolio';
+  if(b){b.classList.toggle('liked',liked);b.setAttribute('aria-pressed',liked?'true':'false');b.setAttribute('aria-label',liked?'Unlike':labOff)}
+  const lt=document.getElementById('likeLabelTop');if(lt)lt.textContent=liked?labOn:labOff;
   try{liked?localStorage.setItem('liked','1'):localStorage.removeItem('liked')}catch(e){}
 }
 function paintTotal(total){
   const n=document.getElementById('likeNumTop');if(n)n.textContent=total;
 }
-// count roll — daan mo-slide up-out, bag-o mo-slide up-in (.3s, tabular-nums)
+// count roll — old value slides up-out, new slides up-in (.3s, tabular-nums)
 function animTotal(to){
   const wrap=document.getElementById('likeNumWrap');if(!wrap)return;
   const cur=wrap.querySelector('span');if(!cur)return;
@@ -264,14 +330,15 @@ function animTotal(to){
   cur.removeAttribute('id');cur.className='roll-old';wrap.append(nxt);
   setTimeout(()=>{cur.remove();nxt.className=''},320);
 }
-// heart spring retrigger — parehas sa framer keyed remount (scale .4 → 1, stiffness 500 damping 15)
+// heart spring retrigger (scale .4 → 1, spring 500/15)
 function heartSpring(){
   const b=document.getElementById('likePillTop');if(!b)return;
   b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
   setTimeout(()=>b.classList.remove('pop'),550);
 }
-// canvas confetti gikan sa button center — mikedev engine exact (speed 4+9r, gravity .28, count param)
-function mikeConfetti(x,y,count){
+// canvas confetti from the button center (speed 4+9r, gravity .28, count param)
+function canvasBurst(x,y,count){
+  sfx('pop');                                       // play "pop" first, before the reduced-motion guard
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   let hex=(getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#d4fd73').replace('#','');
   if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
@@ -319,42 +386,27 @@ async function like(ev){
     paintLiked(!!j.liked);
     animTotal(j.total);
     heartSpring();
-    if(j.liked){sfx('pop');if(btn){const t=btn.getBoundingClientRect();mikeConfetti(t.left+t.width/2,t.top+t.height/2,40)}}
+    if(j.liked){sfx('pop');if(btn){const t=btn.getBoundingClientRect();canvasBurst(t.left+t.width/2,t.top+t.height/2,40)}}
   }catch{
-    toast('Dili ma-like karon, try balik unya.');
+    toast('Could not like right now — try again shortly.');
   }finally{liking=false;if(btn)btn.classList.remove('busy')}
 }
-// sync liked state on load + mount spring sa heart (.4 → 1) parehas ni Mike
+// sync liked state on load + mount the heart spring (.4 → 1)
 (async()=>{try{const r=await fetch('api_like.php');const j=await r.json();paintTotal(j.total);paintLiked(!!j.liked);heartSpring()}catch{try{paintLiked(localStorage.getItem('liked')==='1')}catch(e){}heartSpring()}})();
-// duty flip — AUTOMATIC sa hover ra (mikeddev exact): walay click, badge kinda flips text lang
+// duty flip — automatic on hover only: no click, the badge just swaps its text
 function setDuty(on){
   const badge=document.getElementById('dutyBadge'),card=document.getElementById('photoCard');
   if(!badge||!card)return;
-  badge.textContent=on?'ON DUTY':'OFF DUTY';
+  badge.textContent=on?(badge.dataset.on||'ON DUTY'):(badge.dataset.off||'OFF DUTY');
   card.classList.toggle('off',!on);
 }
 (function(){
   const c=document.getElementById('clock');
   function tick(){try{c.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Manila'})}catch(e){}}
   tick();setInterval(tick,30000);
-  // rotating status — parehas kang Mike: 6-hour slots aligned sa Manila time,
-  // mao nga mu-change gyud inig 12am / 6am / 12pm / 6pm, same status sa tanang bisita
-  (function(){
-    const el=document.getElementById('statusLine');
-    if(!el)return;
-    const STATUSES=['LATE-NIGHT GRINDS 🖥️','ALWAYS LEARNING ⌘','BUILDING PROJECTS ⚙️','WORKING ON MYSELF 🧠'];
-    function paint(){
-      let h;
-      try{h=parseInt(new Intl.DateTimeFormat('en-US',{hour:'numeric',hour12:false,timeZone:'Asia/Manila'}).format(new Date()),10)||0}
-      catch(e){h=new Date().getHours()}
-      const i=Math.floor(h/6)%STATUSES.length;
-      if(el.textContent!==STATUSES[i])el.textContent=STATUSES[i];
-    }
-    paint();setInterval(paint,60000);
-  })();
   const pc=document.getElementById('photoCard');
-  // mikedev exact: 3D tilt sa pointer (±14° spring 150/18) + duty flip on hover/unhover
-  // framer useSpring approximation: current value chases target via lerp .12/frame (≈ stiffness150/damping18 feel)
+  // 3D tilt on pointer (±14°, spring 150/18) + duty flip on hover/unhover
+  // useSpring approximation: current value chases the target via lerp .12/frame
   if(pc){
     const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
     let tx=0,ty=0,cx=0,cy=0,gx=50,gy=50,gcx=50,gcy=50,raf=0,active=false;
@@ -376,15 +428,15 @@ function setDuty(on){
     pc.addEventListener('mouseleave',()=>{tx=0;ty=0;active=false;if(!raf)raf=requestAnimationFrame(frame);setDuty(true)});
   }
 })();
-// ---- hero scroll-fade — mikedev.site exact (component z):
-// progress = scrollY / hero height (framer offset ["start start","end start"]);
+// ---- hero scroll-fade:
+// progress = scrollY / hero height (offset ["start start","end start"]);
 // opacity 1→0 at [.7] of exit, y 0→−120px at [1]; desktop-only; reduced-motion = static.
-// rAF-throttled, sa hero-inner content ra gi-apply (bg canvas/orbs stay put).
+// rAF-throttled, applied to hero-inner content only (bg canvas/orbs stay put).
 (function(){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const hero=document.getElementById('top'),inner=hero&&hero.querySelector('.hero-inner');
   if(!hero||!inner)return;
-  // mike's matchMedia(min-width:1024px): mobile keeps static opacity 1 — same guard
+  // matchMedia(min-width:1024px): mobile keeps static opacity 1
   const mq=matchMedia('(min-width: 1024px)');
   let active=mq.matches,ticking=false;
   function apply(){
@@ -392,8 +444,8 @@ function setDuty(on){
     if(!active){inner.style.opacity='';inner.style.transform='';return}
     const h=hero.offsetHeight||inner.offsetHeight;
     if(h<=0)return;
-    const p=Math.min(1,Math.max(0,(window.scrollY||window.pageYOffset||0)/h));   // progress 0..1 ngadto sa hero end
-    // framer useTransform pairs: opacity [0,.7]→[1,0] (linear), y [0,1]→[0,-120]
+    const p=Math.min(1,Math.max(0,(window.scrollY||window.pageYOffset||0)/h));   // progress 0..1 toward the hero end
+    // transform pairs: opacity [0,.7]→[1,0] (linear), y [0,1]→[0,-120]
     const op=Math.max(0,1-p/.7);
     const y=(0-p)*120;
     inner.style.opacity=op.toFixed(4);
@@ -404,12 +456,12 @@ function setDuty(on){
   mq.addEventListener&&mq.addEventListener('change',e=>{active=e.matches;onScroll()});
   apply();
 })();
-// back to top — lenis-aware: duration 1.1 same sa anchor helper (mikedev exact)
+// back to top — lenis-aware: duration 1.1, same as the anchor helper
 function toTop(){const l=window.lenis;if(l&&l.scrollTo){l.scrollTo(0,{duration:1.1})}else{scrollTo({top:0,behavior:'smooth'})}}
 function toast(m,action){const t=document.getElementById('toast');if(!t)return;t.innerHTML='';t.append(document.createTextNode(m));if(action&&action.label){const b=document.createElement('button');b.type='button';b.className='toast-act';b.textContent=action.label;b.onclick=()=>{t.classList.remove('show');if(action.fn)action.fn()};t.append(b)}t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
-// ---- sound effects toggle — mikedev.site behavior port (clean-room):
+// ---- sound effects toggle:
 // single speaker button, default OFF (volume-x), click = ON (volume) / OFF.
-// Walay external mp3 — WebAudio blip lang para sa UI clicks, saved sa localStorage.
+// No external mp3 — WebAudio blips for UI clicks, saved in localStorage.
 let soundOn=false;
 try{soundOn=localStorage.getItem('snd')==='1'}catch(e){}
 let _ac=null,_lastTap=0;
@@ -422,7 +474,7 @@ function _ctx(){
     return _ac;
   }catch(e){return null}
 }
-// usa ka oscillator + gain envelope: hinay nga sulod (8ms), glide ngadto sa `to`, pagawas sa `dur`
+// one oscillator + gain envelope: soft attack (8ms), glide to the target, release over the duration
 function tone(o){
   const ctx=_ctx();if(!ctx)return;
   const t0=ctx.currentTime+(o.start||0);
@@ -436,7 +488,10 @@ function tone(o){
   osc.connect(g);g.connect(ctx.destination);
   osc.start(t0);osc.stop(t0+o.dur+0.02);
 }
-// parehas pamati kang Mike: tap sa buttons, pop inig like, two-note jingle inig on/off
+// Hand tracking (and other non-gesture code) needs a running AudioContext —
+// call this inside the REAL click handler (before any awaits) so autoplay policy allows it
+window.warmAudio=function(){try{_ctx()}catch(e){}};
+// click feedback: tap on buttons, pop on like, two-note jingle on toggle
 function sfx(name){
   if(name!=='on'&&name!=='off'&&!soundOn)return;
   try{
@@ -471,17 +526,17 @@ function toggleSound(ev){
   sfx(soundOn?'on':'off');
 }
 paintSound();
-// painit ang AudioContext sa unang gesture para dili ma-block sa browser ang mga async sounds (e.g. pop inig like)
+// warm up the AudioContext on the first gesture so the browser doesn't block async sounds (e.g. pop on like)
 (function(){
   let warmed=false;
   function warm(){if(warmed)return;warmed=true;_ctx();}
   addEventListener('pointerdown',warm,{once:true,passive:true});
   addEventListener('keydown',warm,{once:true});
 })();
-// soft tap kada pindot kung naka-ON — parehas kang Mike:
-// ang naay data-sound="none" (sound toggle, like) excluded kay naa silay kaugalingong pop/on/off.
-// pointerdown (capture) para madungog bisan mo-abli ug bag-ong tab (GitHub/FB/LinkedIn);
-// click fallback para sa keyboard (Enter) nga walay pointerdown.
+// soft tap on every press while ON:
+// elements with data-sound="none" (sound toggle, like) are excluded — they have their own pop/on/off.
+// pointerdown (capture) so it fires even when opening a new tab (GitHub/FB/LinkedIn);
+// click fallback for keyboard (Enter), which has no pointerdown.
 function tapEl(e){
   if(!e.target||!e.target.closest)return null;
   if(e.target.closest('[data-sound="none"]'))return 'none';
@@ -489,7 +544,7 @@ function tapEl(e){
   if(n&&n.disabled)return 'none';
   return n?'tap':'click';
 }
-// mikedev exact: left-button pointerdown, interactive → tap, background → click
+// left-button pointerdown: interactive → tap, background → click
 document.addEventListener('pointerdown',function(e){
   if(!soundOn||e.button!==0)return;
   const s=tapEl(e);
@@ -500,12 +555,15 @@ document.addEventListener('click',function(e){
   const s=tapEl(e);
   if(s&&s!=='none')sfx(s);
 });
-// ---- command palette filter — group-aware (tago ang group kung walay match) ----
+// ---- command palette filter — group-aware (hide groups with no match) + empty state ----
 function palFilter(q){
   q=(q||'').toLowerCase();
+  let visible=0;
   document.querySelectorAll('#palList a').forEach(a=>{
     const t=(a.textContent+' '+(a.dataset.t||'')).toLowerCase();
-    a.style.display=!q||t.includes(q)?'':'none';
+    const show=!q||t.includes(q);
+    a.style.display=show?'':'none';
+    if(show)visible++;
   });
   document.querySelectorAll('#palList .pal-group').forEach(g=>{
     let el=g.nextElementSibling,vis=false;
@@ -515,45 +573,64 @@ function palFilter(q){
     }
     g.style.display=vis?'':'none';
   });
+  const e=document.querySelector('#palList .pal-empty');
+  if(e){e.hidden=visible>0;const s=e.querySelector('span');if(s)s.textContent=q}
   palIdx=0;palPaint();
 }
 (function(){
-  // rotating words: Scale. -> Inspire. -> Evolve. -> Scale…, period 4000ms,
-  // exit 200ms (y 0 -> -0.3em, opacity -> 0, blur -> 6px), gap ~70ms blank, enter 300ms (y +0.3em -> 0)
-  const words=['Scale.','Inspire.','Evolve.'];
-  const el=document.getElementById('rotWord');
+  // rotating word (sync mode): word top .2em inside an overflow mask (-top .2em / -bottom .25em);
+  // initial y 110% opacity 0 blur(6px) -> animate y 0 opacity 1 blur(0); exit y -110% opacity 0 blur(6px);
+  // transition duration .7s ease [.22,1,.36,1]. (first change 2200ms, then 2600ms interval)
+  const view=document.querySelector('#rotHolder .rot-view');
+  const first=document.getElementById('rotWord');
+  if(!view||!first)return;
+  let words=['Scale.','Inspire.','Evolve.'];
+  try{const w=JSON.parse(first.dataset.words||'null');if(Array.isArray(w)&&w.length)words=w}catch(e){}
+  if(!words.length)return;
   const sr=document.getElementById('rotSr');
-  if(!el)return;
-  let i=words.indexOf((el.textContent||'').trim());
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FIRST=2200, HOLD=2600, DUR=700;     // first change 2200ms, then 2600ms interval, 0.7s transition
+  let i=words.indexOf((first.textContent||'').trim());
   if(i<0)i=0;
-  setInterval(()=>{
-    i=(i+1)%words.length;
-    el.classList.add('rot-out');
+  let cur=first, wait=FIRST;
+  first.classList.add('in');                // first word: static, no entry animation
+  (function cycle(){
     setTimeout(()=>{
-      el.textContent=words[i];
+      wait=HOLD;
+      i=(i+1)%words.length;
       if(sr)sr.textContent=words[i];
-      el.classList.remove('rot-out');
-      el.classList.add('rot-in');
-      setTimeout(()=>el.classList.remove('rot-in'),320);
-    },200);
-  },4000);
+      if(reduced){cur.textContent=words[i];cycle();return;}
+      const old=cur;                        // old word moves up and out (exit y -110%)
+      old.classList.remove('in');
+      old.classList.add('out');
+      const nw=document.createElement('span');   // new word comes in from below (initial y 110%)
+      nw.className='rot-word';
+      nw.textContent=words[i];
+      view.appendChild(nw);
+      void nw.offsetWidth;                  // force reflow so the start state takes effect
+      nw.classList.add('in');
+      cur=nw;
+      setTimeout(()=>old.remove(),DUR+40);
+      cycle();
+    },wait);
+  })();
 })();
-// ---- hero dot grid — mikedev.site EXACT port (de-minified module 67979, function v) ----
-// spacing 28 (1.6x sa low-end devices), repel radius 180, base dot = 1.2px rect @ rgba(255,255,255,.11),
+// ---- hero dot grid ----
+// spacing 28 (1.6x on low-end devices), repel radius 180, base dot = 1.2px rect @ rgba(255,255,255,.11),
 // lit dots: alpha .12+.8*e, radius .7+1.9*e, e=(1-d/180)^2, push 14*e along the cursor->dot vector,
 // cursor lerp .1/frame, idle drift tx=m*(.5+.32*sin(.35t)) ty=p*(.45+.25*sin(.5t+1.2)), 4s idle re-arm,
-// accent re-read sa motion token change, rAF throttle 33ms sa low-end, full cleanup handlers
+// accent re-read on accent change, rAF throttle 33ms on low-end, full cleanup handlers
 (function(){
   const cv=document.getElementById('heroDots'), hero=document.getElementById('top');
   if(!cv||!hero||!cv.getContext)return;
   const ctx=cv.getContext('2d');
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const SPACING=28, RADIUS=180;                          // mikedev defaults: spacing=28, radius=180
-  // low-end heuristic (mikedev uses its own detector; spacing 1.6x + 33ms throttle + dpr 1)
+  const SPACING=28, RADIUS=180;                          // spacing=28, radius=180
+  // low-end heuristic: spacing 1.6x + 33ms throttle + dpr 1
   const lowEnd=(navigator.hardwareConcurrency||4)<=2||/Android 4|iPhone OS 1[0-2]_/.test(navigator.userAgent);
-  const spacing=lowEnd?Math.round(1.6*SPACING):SPACING;   // same low-end 1.6x rule as mikedev
+  const spacing=lowEnd?Math.round(1.6*SPACING):SPACING;   // low-end 1.6x spacing rule
   let W=0,H=0,dpr=1,running=false,visible=true,lastT=0,accRgb='212,253,115';
-  // cursor + idle float state — same lerp/inertia constants as mikedev
+  // cursor + idle float state — lerp/inertia constants
   const cur={x:0,y:0,tx:0,ty:0};
   let hasMouse=false,idleUntil=0,startT=performance.now();
   function readAcc(){
@@ -566,24 +643,24 @@ function palFilter(q){
   }
   function size(){
     const r=hero.getBoundingClientRect();
-    dpr=lowEnd?1:Math.min(2,devicePixelRatio||1);         // low-end dpr 1, else capped 2 — same as mikedev
+    dpr=lowEnd?1:Math.min(2,devicePixelRatio||1);         // low-end dpr 1, else capped 2
     W=r.width;H=r.height;
     cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    // start float point at 62%/42% of the hero — same seed point as mikedev
+    // seed the idle float point at 62%/42% of the hero
     if(!cur.x){cur.x=cur.tx=.62*W;cur.y=cur.ty=.42*H}
   }
   function draw(now){
-    // idle sa 4s: gentle sine float — SAME formulas: tx=.5+.32sin(.35t), ty=.45+.25sin(.5t+1.2)
+    // idle after 4s: gentle sine float — tx=.5+.32sin(.35t), ty=.45+.25sin(.5t+1.2)
     if(!hasMouse||now-idleUntil>4000){
       const t=(now-startT)/1000;
       cur.tx=W*(.5+.32*Math.sin(.35*t));
       cur.ty=H*(.45+.25*Math.sin(.5*t+1.2));
     }
-    cur.x+=(cur.tx-cur.x)*.1;                             // frame lerp 0.1, exactly like mikedev
+    cur.x+=(cur.tx-cur.x)*.1;                             // frame lerp 0.1
     cur.y+=(cur.ty-cur.y)*.1;
     ctx.clearRect(0,0,W,H);
-    // uniform centered lattice — mikedev's exact centering math
+    // uniform centered lattice
     const cols=Math.ceil(W/spacing)+1, rows=Math.ceil(H/spacing)+1;
     const ox=(W-(cols-1)*spacing)/2, oy=(H-(rows-1)*spacing)/2;
 
@@ -592,14 +669,14 @@ function palFilter(q){
       const x=ox+c*spacing,y=oy+r*spacing;
       const dx=x-cur.x,dy=y-cur.y;
       if(dx>RADIUS||dx<-RADIUS||dy>RADIUS||dy<-RADIUS){
-        // base lattice = crisp 1.2px rects @ alpha .11 (mikedev exact)
+        // base lattice = crisp 1.2px rects @ alpha .11
         ctx.rect(x-.6,y-.6,1.2,1.2);
         continue;
       }
       const d=Math.hypot(dx,dy);
       if(d<RADIUS){
         const e=(1-d/RADIUS)**2;
-        // push AWAY from cursor by 14*e along the vector — mikedev's displacement rule
+        // push away from the cursor by 14*e along the vector
         const push=d>0?14*e/d:0;
         lit.push([x+dx*push,y+dy*push,e]);
       }
@@ -621,7 +698,7 @@ function palFilter(q){
     if(running||!visible||reduced||document.hidden)return;
     running=true;requestAnimationFrame(loop);
   }
-  // pointermove listener is GLOBAL sa mikedev — hero ra gihapon ang coverage sa canvas
+  // pointermove listener is global; the canvas only covers the hero
   addEventListener('pointermove',e=>{
     if('mouse'!==e.pointerType)return;
     const r=cv.getBoundingClientRect();
@@ -630,8 +707,8 @@ function palFilter(q){
     hasMouse=true;idleUntil=performance.now();kick();
   },{passive:true});
   document.documentElement.addEventListener('pointerleave',()=>{hasMouse=false});
-  // mikeddev-style live accent sync: sa event (dili setInterval polling) — instant, zero lag,
-  // ang sunod nga rAF frame impor draw na dayon gamit ang bag-ong color (smooth kay per-frame render)
+  // live accent sync via event (not setInterval polling) — instant, zero lag;
+  // the next rAF frame redraws with the new color (smooth, per-frame render)
   document.addEventListener('accentchange',()=>{
     readAcc();
     if(reduced)draw(performance.now());else kick();
@@ -660,7 +737,7 @@ function burstConfetti(x,y,n){
     document.body.append(p);setTimeout(()=>p.remove(),2000);
   }
 }
-// ---- copy email button — mikedev.site exact (component D):
+// ---- copy email button:
 // clipboard.writeText → 1800ms "Copied to clipboard" + icon swap; catch → mailto fallback
 (async function(){
   const btn=document.getElementById('copyEmail');
@@ -675,14 +752,14 @@ function burstConfetti(x,y,n){
       if(txt){
         txt.textContent='Copied to clipboard';
         clearTimeout(t);
-        t=setTimeout(()=>{btn.classList.remove('copied');txt.textContent=email},1800);   // Mike: exact 1800ms
+        t=setTimeout(()=>{btn.classList.remove('copied');txt.textContent=email},1800);   // 1800ms
       }
     }catch(e){
-      window.location.href='mailto:'+email;                                             // Mike: exact fallback
+      window.location.href='mailto:'+email;                                             // mailto fallback
     }
   });
 })();
-// ---- open-to-work sticker easter egg (1/5) + dark pop-toast sunod sa video ----
+// ---- open-to-work sticker easter egg (1/5) + dark pop-toast like the video ----
 function showPop(title,sub,ms){
   const t=document.getElementById('popToast');if(!t)return;
   t.innerHTML='<span class="pop-ic">✦</span><span class="pop-tx"><b>'+title+'</b><small>'+sub+'</small></span>';
@@ -690,8 +767,8 @@ function showPop(title,sub,ms){
 }
 function secretMuted(){try{return localStorage.getItem('edsiel-secrets-complete-muted')==='1'}catch(e){return false}}
 function muteSecretComplete(on){try{on?localStorage.setItem('edsiel-secrets-complete-muted','1'):localStorage.removeItem('edsiel-secrets-complete-muted')}catch(e){}}
-// secret hunt — mikedev exact texts: "Secret found" / "Already found this one" /
-// complete "You found every secret 🏆", body "<label> · <n>/5", chime + confetti 220 inig complete
+// secret hunt — texts: "Secret found" / "Already found this one" /
+// complete "You found every secret 🏆", body "<label> · <n>/5", chime + confetti 220 on complete
 function secret(id){
   const LABELS={sticker:'Popped the open-to-work sticker',konami:'Entered the Konami code',name:'Typed my name',sudo:'Tried to get root',wordmark:'Poked every letter'};
   let got=[];try{got=JSON.parse(localStorage.getItem('edsiel-secrets')||'[]');if(!Array.isArray(got))got=[]}catch(e){got=[]}
@@ -700,7 +777,7 @@ function secret(id){
   if(isNew){got.push(id);try{localStorage.setItem('edsiel-secrets',JSON.stringify(got))}catch(e){}}
   const done=got.length>=5;
   if(isNew&&typeof sfx==='function')sfx('chime');
-  if(done&&isNew&&typeof mikeConfetti==='function')mikeConfetti(innerWidth/2,innerHeight/3,220);
+  if(done&&isNew&&typeof canvasBurst==='function')canvasBurst(innerWidth/2,innerHeight/3,220);
   if(done&&secretMuted())return isNew;
   const title=done?'You found every secret 🏆':isNew?'Secret found':'Already found this one';
   const body=done?"Seriously impressive. Say hi through the contact form, I'd love to meet you.":LABELS[id]+' · '+got.length+'/5';
@@ -712,18 +789,17 @@ function popSticker(ev){
   let n=0;try{n=parseInt(localStorage.getItem('sticker_pops')||'0',10)||0}catch(e){}
   const x=ev&&ev.clientX!==undefined?ev.clientX:innerWidth*0.75;
   const y=ev&&ev.clientY!==undefined?ev.clientY:200;
-  mikeConfetti(x,y,70);
+  canvasBurst(x,y,70);                            // the "pop" sound plays inside the burst
   const badge=document.getElementById('stickerBadge');
   if(badge){badge.classList.remove('popped');void badge.offsetWidth;badge.classList.add('popped');setTimeout(()=>badge.classList.remove('popped'),600)}
   if(!n){try{localStorage.setItem('sticker_pops','1')}catch(e){}}
   secret('sticker');
 }
 // ============================================================
-// mikedev.site exact clone — ticklish wordmark letters + canvas confetti.
-// Ported 1:1 from the de-minified framer-motion source (no libraries):
+// ticklish wordmark letters + canvas confetti.
 //   letter: y:[0,-28%,0] rotate:[0,±12° rand,0] scaleY:[1,1.08,.94,1],
 //           duration .6s, ease cubic-bezier(.22,1,.36,1), on pointerenter+down
-//   all letters poked → confetti({count:140}) + secret 1x
+//   all letters poked → confetti({count:140}) + secret once
 // ============================================================
 (function(){
   const box=document.getElementById('bigName');
@@ -731,9 +807,10 @@ function popSticker(ev){
   box.dataset.ticklish='1';
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* --- exact mikedev confetti (module 85071) ----------------- */
+  /* --- canvas confetti ----------------- */
   function canvasConfetti(opts){
     opts=opts||{};
+    sfx('pop');                                     // play "pop"
     if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
     // palette: accent base → [accent, +20% black, +40% white, stone-100, stone-400]
     let hex=(getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#d4fd73').replace('#','');
@@ -777,8 +854,8 @@ function popSticker(ev){
   }
 
   /* --- per-property keyframe sampler ------------------------- */
-  // framer samples y:[...], rotate:[...], scaleY:[...] as one eased timeline;
-  // we bake cubic-bezier(.22,1,.36,1) into ~30 sampled WAAPI keyframes
+  // y:[...], rotate:[...], scaleY:[...] are sampled as one eased timeline;
+  // cubic-bezier(.22,1,.36,1) is baked into ~30 sampled WAAPI keyframes
   // (Newton-Raphson solve of x(u)=u, standard cubic-bezier solver).
   function bezier(m1x,m1y,m2x,m2y){
     return function(u){
@@ -801,8 +878,8 @@ function popSticker(ev){
   const poked=new Set();
   let announced=false;
   function poke(el){
-    // mikedev ordering: onPoke fires BEFORE the reduced-motion/animation guard, so the
-    // secret still unlocks even without motion — only the animation itself is skipped
+    // the poke fires before the reduced-motion guard, so the
+    // secret still unlocks even without motion — only the animation is skipped
     poked.add(el.index);el.classList.add('poked');
     if(!announced&&poked.size>=letters.length){
       announced=true;
@@ -810,7 +887,7 @@ function popSticker(ev){
       secret('wordmark');
     }
     if(reduced||!el.animate)return;
-    const tilt=(Math.random()-.5)*24;   // ±12° random snap, exactly like mikedev
+    const tilt=(Math.random()-.5)*24;   // ±12° random snap
     const kf=[];
     for(let i=0;i<=30;i++){
       const t=EASE(i/30);
@@ -821,13 +898,13 @@ function popSticker(ev){
   }
   letters.forEach((s,i)=>{
     s.index=i;
-    // pointerenter + pointerdown — parehas sa mikedev (onPointerEnter + onPointerDown)
+    // pointerenter + pointerdown
     s.addEventListener('pointerenter',()=>poke(s));
     s.addEventListener('pointerdown',()=>poke(s));
   });
 })();
-// ---- typing secrets — mikedev exact: lowercase key match, skip sa inputs,
-// konami → confetti 160, name → confetti 100 (iya "mike", ato "edsiel")
+// ---- typing secrets: lowercase key match, skipped inside inputs,
+// konami → confetti 160, name → confetti 100
 (function(){
   const KON=['arrowup','arrowup','arrowdown','arrowdown','arrowleft','arrowright','arrowleft','arrowright','b','a'];
   const seq=[];let nameBuf='',sudoBuf='';
@@ -839,13 +916,183 @@ function popSticker(ev){
     seq.push(k);if(seq.length>KON.length)seq.shift();
     if(seq.length===KON.length&&KON.every((v,i)=>seq[i]===v)){
       seq.length=0;
-      mikeConfetti(innerWidth/2,innerHeight/3,160);
+      canvasBurst(innerWidth/2,innerHeight/3,160);
       secret('konami');
     }
     if(k.length===1){
       nameBuf=(nameBuf+k).slice(-6);sudoBuf=(sudoBuf+k).slice(-4);
-      if(nameBuf==='edsiel'){nameBuf='';mikeConfetti(innerWidth/2,innerHeight/3,100);secret('name');}
+      if(nameBuf==='edsiel'){nameBuf='';canvasBurst(innerWidth/2,innerHeight/3,100);secret('name');}
       if(sudoBuf==='sudo'){sudoBuf='';secret('sudo');}
     }
   });
+})();
+// ---- AI chat (UI only) ----
+// The API is not wired up yet. Plug the integration into askAI() below.
+// Without it, sending shows the "not configured" error bubble.
+// Details: fab 56→240 pill on scroll>100 (desktop, closed) + inline input Enter-to-send,
+// overlay click close, body lock (position:fixed + top:-scrollY), open-ai-chat event,
+// welcome message, typing dots, markdown renderer (bold/code/h-/list), error bubble.
+(function(){
+  const W=document.getElementById('aiWidget');if(!W)return;
+  const fab=document.getElementById('aiFab'), fabBtn=document.getElementById('aiFabBtn'), fabIc=document.getElementById('aiFabIc');
+  const inline=document.getElementById('aiInline'), inlineInput=document.getElementById('aiInlineInput');
+  const ov=document.getElementById('aiOv'), panel=document.getElementById('aiPanel');
+  const closeBtn=document.getElementById('aiClose'), msgs=document.getElementById('aiMsgs');
+  const ta=document.getElementById('aiInput'), sendBtn=document.getElementById('aiSend');
+  const IC=window.AI_ICONS||{}, OWNER=W.getAttribute('data-owner')||'me';
+  let open=false, busy=false, error=null, messages=[];
+  const mq=matchMedia('(max-width: 767px)');let mobile=mq.matches;
+  mq.addEventListener('change',e=>{mobile=e.matches;syncFab()});
+
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const bold=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  // inline markdown renderer
+  function md(src){
+    return String(src).split(/(```[\s\S]*?```|`[^`]+`)/g).map(p=>{
+      if(p.slice(0,3)==='```'&&p.slice(-3)==='```'){
+        const raw=p.slice(3,-3).trim(), lines=raw.split('\n'), lang=lines[0].trim();
+        const code=lines.length>1?lines.slice(1).join('\n'):raw;
+        return '<pre>'+(lang?'<div class="ai-lang">'+esc(lang)+'</div>':'')+'<code>'+esc(code)+'</code></pre>';
+      }
+      if(p[0]==='`'&&p.slice(-1)==='`') return '<code class="inline">'+esc(p.slice(1,-1))+'</code>';
+      return p.split('\n').map(line=>{
+        const t=line.trim();
+        if(t==='---'||t==='***'||t==='___') return '<hr>';
+        if(t.slice(0,4)==='### ') return '<h3>'+bold(t.slice(4))+'</h3>';
+        if(t.slice(0,3)==='## ') return '<h2>'+bold(t.slice(3))+'</h2>';
+        if(t.slice(0,2)==='# ') return '<h1>'+bold(t.slice(2))+'</h1>';
+        let m=line.match(/^(\s*)([-•*])\s(.+)$/);
+        if(m) return '<div class="ai-li" style="margin-left:'+(8*m[1].length)+'px"><span class="b">•</span><span>'+bold(m[3])+'</span></div>';
+        m=line.match(/^(\s*)(\d+)\.\s(.+)$/);
+        if(m) return '<div class="ai-li" style="margin-left:'+(8*m[1].length)+'px"><span class="n">'+m[2]+'.</span><span>'+bold(m[3])+'</span></div>';
+        if(t==='') return '<div class="ai-sp"></div>';
+        return '<div>'+bold(line)+'</div>';
+      }).join('');
+    }).join('');
+  }
+  const DOTS='<span class="ai-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span>';
+  function render(){
+    let html=messages.map(m=>{
+      if(m.role==='user') return '<div class="ai-msg user"><div class="ai-bubble"><p>'+esc(m.content)+'</p></div></div>';
+      const body=m.content===''?DOTS:'<div class="ai-md">'+md(m.content)+'</div>';
+      return '<div class="ai-msg bot"><div class="ai-bubble">'+body+'</div></div>';
+    }).join('');
+    const last=messages[messages.length-1];
+    if(busy&&last&&last.content!=='') html+='<div class="ai-typing"><div class="ai-bubble">'+DOTS+'</div></div>';
+    if(error) html+='<div class="ai-err"><div>'+esc(error)+'</div></div>';
+    msgs.innerHTML=html;
+    msgs.scrollTop=msgs.scrollHeight;
+  }
+
+  // ---- INTEGRATION POINT ---------------------------------------------------
+  // Wire your API here. Example:
+  //   const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+  //     body:JSON.stringify({messages:payload})});
+  //   if(!r.ok) throw new Error('API request failed: '+r.status);
+  //   // stream: read the reader and call onDelta(chunk) for each delta
+  //   // non-stream: const d=await r.json(); onDelta(d.choices[0].message.content);
+  // Without an API, this stays in the "not configured" error path.
+  async function askAI(payload,onDelta){ // eslint-disable-line no-unused-vars
+    throw new Error('The AI assistant is not configured yet.');
+  }
+  function payloadFor(text){
+    return [{role:'system',content:''}].concat(
+      messages.filter(m=>m.id!=='welcome').map(m=>({role:m.role,content:m.content})),
+      [{role:'user',content:text}]
+    );
+  }
+  // --------------------------------------------------------------------------
+
+  async function send(text,fromInline){
+    const body=(text===undefined?ta.value:text).trim();
+    if(!body||busy)return;
+    messages.push({id:Date.now().toString(),role:'user',content:body,timestamp:new Date});
+    if(fromInline&&!open)openChat();
+    ta.value='';inlineInput.value='';syncSend();
+    busy=true;error=null;syncSend();
+    const aid=(Date.now()+1).toString();
+    const asst={id:aid,role:'assistant',content:'',timestamp:new Date};
+    messages.push(asst);render();
+    const payload=payloadFor(body);
+    try{
+      await askAI(payload,chunk=>{asst.content+=chunk;render();});
+    }catch(e){
+      console.error('Chat error:',e);
+      error=(e instanceof Error?e.message:'Failed to send message');
+      messages=messages.filter(m=>m.id!==aid);
+    }finally{busy=false;syncSend();render();}
+  }
+  function syncSend(){
+    sendBtn.disabled=!ta.value.trim()||busy;
+    ta.disabled=busy;
+    syncFab();
+  }
+  let fabState=null, fabT=0;
+  // icon morph (wait mode) — old icon exits (.2s), then the new one enters (.2s)
+  function setFabIcon(state){
+    if(state===fabState)return;
+    const prev=fabState; fabState=state;
+    const svg=IC[state]||IC.open||'';
+    const nm=c=>c==='close'?'Close':c==='send'?'Send':'Open';
+    const swap=()=>{
+      fabIc.innerHTML=svg;
+      fabIc.style.animation='none';void fabIc.offsetWidth;
+      fabIc.style.animation='aiIcIn'+nm(state)+' .2s ease-out forwards';
+    };
+    clearTimeout(fabT);
+    if(prev==null){swap();return;}
+    fabIc.style.animation='aiIcOut'+nm(prev)+' .2s ease-out forwards';
+    fabT=setTimeout(swap,200);
+  }
+  function syncFab(){
+    const scrolled=window.scrollY>100;
+    const canPeek=scrolled&&!open&&!mobile;
+    fab.classList.toggle('peek',canPeek);
+    inline.classList.toggle('show',canPeek);
+    const state=open?'close':(canPeek&&inlineInput.value.trim()?'send':'open');
+    setFabIcon(state);
+    fabBtn.setAttribute('aria-label',state==='close'?'Close AI chat':state==='send'?'Send message':'Toggle AI chat');
+  }
+  function openChat(){
+    if(open)return;
+    open=true;error=null;
+    panel.classList.add('show');ov.classList.add('show');
+    syncFab();
+    if(messages.length===0)messages.push({id:'welcome',role:'assistant',content:"Hi! I'm "+OWNER+"'s AI assistant. I can answer questions about his work, skills, and availability. How can I help you today?",timestamp:new Date});
+    render();
+    const y=window.scrollY;
+    document.body.style.position='fixed';document.body.style.top='-'+y+'px';document.body.style.width='100%';document.body.style.overflowY='scroll';
+    document.body.setAttribute('data-chat-open','true');
+    inlineInput.blur();ta.focus();
+  }
+  function closeChat(){
+    if(!open)return;
+    open=false;
+    panel.classList.remove('show');ov.classList.remove('show');
+    syncFab();
+    const top=document.body.style.top;
+    document.body.style.position='';document.body.style.top='';document.body.style.width='';document.body.style.overflowY='';
+    document.body.removeAttribute('data-chat-open');
+    window.scrollTo(0,-1*parseInt(top||'0',10));
+  }
+  fabBtn.addEventListener('click',()=>{
+    if(fab.classList.contains('peek')&&inlineInput.value.trim()) send(inlineInput.value,true);
+    else (open?closeChat():openChat());
+  });
+  ov.addEventListener('click',closeChat);
+  ov.addEventListener('wheel',e=>e.preventDefault(),{passive:false});
+  ov.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  panel.addEventListener('wheel',e=>e.stopPropagation());
+  panel.addEventListener('touchmove',e=>e.stopPropagation());
+  closeBtn.addEventListener('click',closeChat);
+  inlineInput.addEventListener('input',syncFab);
+  inlineInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&inlineInput.value.trim())send(inlineInput.value,true);});
+  ta.addEventListener('input',syncSend);
+  ta.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(ta.value.trim()&&!busy)send();}
+  });
+  sendBtn.addEventListener('click',()=>send());
+  addEventListener('scroll',syncFab,{passive:true});
+  addEventListener('open-ai-chat',openChat);
+  syncFab();
 })();
