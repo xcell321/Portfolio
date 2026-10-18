@@ -268,6 +268,7 @@ function heartSpring(){
 }
 // canvas confetti gikan sa button center — mikedev engine exact (speed 4+9r, gravity .28, count param)
 function mikeConfetti(x,y,count){
+  sfx('pop');                                       // mikedev module 85071: confetti mopop og "pop" (una sa reduced-motion guard)
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   let hex=(getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#d4fd73').replace('#','');
   if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
@@ -433,7 +434,6 @@ function sfx(name){
     else if(name==='click')tone({freq:520,to:340,dur:.04,type:'triangle',vol:.03});
     else if(name==='pop'){tone({freq:260,to:900,dur:.12,type:'triangle',vol:.07});[.06,.11,.17].forEach(function(s,i){tone({freq:1500+350*i+200*Math.random(),start:s,dur:.09,vol:.025})});}
     else if(name==='chime'){tone({freq:1318.5,dur:.5,vol:.05});tone({freq:1975.5,start:.09,dur:.6,vol:.04});}
-    else if(name==='sticker'){[0,.045,.09].forEach(function(s,i){tone({freq:520+180*i+120*Math.random(),to:980+260*i,dur:.11,type:'triangle',vol:.055})});}
     else if(name==='on'){tone({freq:660,dur:.08,vol:.05});tone({freq:990,start:.07,dur:.12,vol:.05});}
     else if(name==='off'){tone({freq:990,dur:.08,vol:.04});tone({freq:560,start:.07,dur:.12,vol:.04});}
   }catch(e){}
@@ -715,8 +715,7 @@ function popSticker(ev){
   let n=0;try{n=parseInt(localStorage.getItem('sticker_pops')||'0',10)||0}catch(e){}
   const x=ev&&ev.clientX!==undefined?ev.clientX:innerWidth*0.75;
   const y=ev&&ev.clientY!==undefined?ev.clientY:200;
-  mikeConfetti(x,y,70);
-  sfx('sticker');                                  // tingog kada pisil (bisan spam) — sama kang Mike
+  mikeConfetti(x,y,70);                            // mikedev: ang tingog ("pop") naa sulod sa confetti (module 85071)
   const badge=document.getElementById('stickerBadge');
   if(badge){badge.classList.remove('popped');void badge.offsetWidth;badge.classList.add('popped');setTimeout(()=>badge.classList.remove('popped'),600)}
   if(!n){try{localStorage.setItem('sticker_pops','1')}catch(e){}}
@@ -738,6 +737,7 @@ function popSticker(ev){
   /* --- exact mikedev confetti (module 85071) ----------------- */
   function canvasConfetti(opts){
     opts=opts||{};
+    sfx('pop');                                     // parehas: mikedev confetti (85071) mopop og "pop"
     if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
     // palette: accent base → [accent, +20% black, +40% white, stone-100, stone-400]
     let hex=(getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#d4fd73').replace('#','');

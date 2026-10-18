@@ -22,7 +22,7 @@
 const services=<?=json_encode(token('services', []))?>;
 document.getElementById('mq').innerHTML=(services.map(s=>`<li><span class="t">${s}</span><span class="sep">✦</span></li>`).join('')).repeat(4);
 </script>
-<script src="assets/js/main.js?v=20261018e"></script>
+<script src="assets/js/main.js?v=20261018f"></script>
 <script>
 // stub para dili mag-ReferenceError ang nav hand button samtang nag-load pa ang ES module
 window.toggleHandTracking = window.toggleHandTracking || function () {
