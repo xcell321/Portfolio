@@ -206,23 +206,93 @@ document.querySelectorAll('.proj').forEach(c=>{
   c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform=`perspective(900px) rotateX(${-y*5}deg) rotateY(${x*6}deg) translateY(-4px)`});
   c.addEventListener('mouseleave',()=>c.style.transform='');
 });
-// command palette — mikedev.site UI port (clean-room, UI only):
-// Ctrl+K toggle, "/" open, Esc close, ↑↓ navigate, Enter select
-let palIdx=0;
+// command palette — mikedev.site EXACT behavior port (module 72286):
+// groups Navigate/Projects/Actions/Accent color/Elsewhere (group shown ra kung naay match),
+// query filter over label+keywords+group, ↑↓ + hover index + scrollIntoView{block:'nearest'},
+// Enter/Escape, pick = close unya run after 120ms, toast 1800ms,
+// open = focus input + lenis.stop + body lock, Ctrl/Cmd+K toggle, "/" open, window "open-command-palette" event.
+const OPEN_PAL_EVENT='open-command-palette';
+let palIdx=0, palToastT=0;
 function palOpts(){return [...document.querySelectorAll('#palList a')].filter(a=>a.style.display!=='none');}
 function palPaint(){
   const items=palOpts();
   if(palIdx>=items.length)palIdx=Math.max(0,items.length-1);
+  if(palIdx<0)palIdx=0;
   items.forEach((a,i)=>a.classList.toggle('act',i===palIdx));
   const act=items[palIdx];
   if(act)act.scrollIntoView({block:'nearest'});
 }
+function palToast(msg){
+  const t=document.getElementById('palToast');if(!t)return;
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(palToastT);palToastT=setTimeout(()=>t.classList.remove('show'),1800);   // Mike: 1800ms
+}
+function foundSecrets(){
+  const all=(window.PAL&&window.PAL.secrets)||[];
+  try{const g=JSON.parse(localStorage.getItem('edsiel-secrets')||'[]');return Array.isArray(g)?g.filter(x=>all.indexOf(x)>-1).length:0}catch(e){return 0}
+}
+function runPalAct(it){
+  if(it.act==='copy-email'){
+    const email=(window.PAL&&window.PAL.email)||'';
+    navigator.clipboard.writeText(email).then(()=>palToast('Email copied')).catch(()=>{window.location.href='mailto:'+email});
+  }else if(it.act==='send-email'){
+    window.location.href='mailto:'+((window.PAL&&window.PAL.email)||'');
+  }else if(it.act==='sound'){
+    toggleSound();palToast(soundOn?'Sounds on \uD83D\uDD0A':'Sounds off');
+  }else if(it.act==='confetti'){
+    mikeConfetti(innerWidth/2,innerHeight/3,150);
+  }else if(it.act==='secrets'){
+    const total=((window.PAL&&window.PAL.secrets)||[]).length||5, found=foundSecrets();
+    palToast(found===total?'All secrets found \uD83C\uDFC6':found+'/'+total+' secrets found. Try `secrets` in the terminal for hints');
+  }else if(it.act==='accent'){
+    setAccent(it.accent,it.hex);palToast('Accent set to '+it.accent);
+  }
+}
+function buildPalette(){
+  const view=document.getElementById('palList');if(!view)return;
+  const D=window.PAL||{},IC=window.PAL_ICONS||{};
+  const svg=n=>IC[n]||'';
+  const groups=['Navigate','Projects','Actions','Accent color','Elsewhere'];
+  let raw=[];
+  (D.nav||[]).forEach(s=>raw.push({group:'Navigate',label:s.label,icon:'hash',keys:s.keys||s.id,href:'#'+s.id}));
+  (D.projects||[]).forEach(p=>raw.push({group:'Projects',label:p.title,hint:p.year,icon:'filetext',keys:((p.tags||'')+' '+(p.year||'')).toLowerCase(),href:'#projects'}));
+  raw.push({group:'Actions',label:'Copy email address',hint:D.email||'',icon:'copy',keys:'mail contact',act:'copy-email'});
+  raw.push({group:'Actions',label:'Send an email',icon:'send',keys:'mail contact hire',act:'send-email'});
+  raw.push({group:'Actions',label:'Toggle sound effects',icon:'volume',keys:'audio sfx mute unmute sounds',act:'sound'});
+  raw.push({group:'Actions',label:'Throw confetti',icon:'spark',keys:'party celebrate fun surprise',act:'confetti'});
+  raw.push({group:'Actions',label:'Secret hunt progress',hint:((D.secrets||[]).length||5)+' hidden',icon:'award',keys:'easter egg secret hidden konami',act:'secrets'});
+  ACCENTS.forEach(([n,h])=>raw.push({group:'Accent color',label:n+' accent',icon:'palette',keys:'theme color colour accent personalize',act:'accent',accent:n,hex:h}));
+  (D.socials||[]).forEach(s=>raw.push({group:'Elsewhere',label:s.name,icon:s.icon||'arrow',keys:'social link',href:s.href,ext:true}));
+  view.innerHTML='';
+  const empty=document.createElement('p');empty.className='pal-empty';empty.hidden=true;empty.innerHTML='Nothing matches \u201C<span></span>\u201D.';view.appendChild(empty);
+  groups.forEach(g=>{
+    const list=raw.filter(x=>x.group===g);if(!list.length)return;
+    const head=document.createElement('p');head.className='pal-group';head.textContent=g;view.appendChild(head);
+    list.forEach(it=>{
+      const a=document.createElement('a');a.className='pal-item';a.setAttribute('role','option');
+      if(it.href){a.href=it.href;if(it.ext){a.target='_blank';a.rel='noopener noreferrer'}}
+      else a.href='#';
+      a.innerHTML=svg(it.icon)+'<span></span>'+(it.hint?'<em></em>':'')+svg('corner');
+      a.querySelector('span').textContent=it.label;
+      if(it.hint)a.querySelector('em').textContent=it.hint;
+      a.dataset.t=(it.label+' '+(it.keys||'')+' '+it.group).toLowerCase();
+      if(it.act)a.dataset.act=it.act;
+      a.addEventListener('mousemove',()=>{palIdx=palOpts().indexOf(a);palPaint()});   // Mike: onMouseMove → setIndex
+      a.addEventListener('click',e=>{
+        if(it.act){e.preventDefault();palClose();setTimeout(()=>runPalAct(it),120)}
+        else palClose();
+      });
+      view.appendChild(a);
+    });
+  });
+}
+buildPalette();
 function palLock(on){try{if(on){if(window.lenis&&window.lenis.stop)window.lenis.stop();document.body.style.overflow='hidden';}else{if(window.lenis&&window.lenis.start)window.lenis.start();document.body.style.overflow='';}}catch(e){}}
 function palOpen(){const p=document.getElementById('pal');p.classList.remove('closing');p.classList.add('open');palLock(true);const i=document.getElementById('palInput');i.value='';palFilter('');i.focus();requestAnimationFrame(()=>i.focus());setTimeout(()=>{if(document.getElementById('pal').classList.contains('open'))i.focus();},60);}
 function palClose(){const p=document.getElementById('pal');if(!p.classList.contains('open')||p.classList.contains('closing'))return;p.classList.add('closing');palLock(false);setTimeout(()=>{p.classList.remove('open','closing');},150);}
 function palPick(){
   const a=palOpts()[palIdx];if(!a)return;
-  palClose();setTimeout(()=>a.click(),60);
+  palClose();setTimeout(()=>a.click(),120);   // Mike: close unya run 120ms
 }
 function palKey(e){
   if(e.key==='Escape'){e.preventDefault();palClose();}
@@ -235,6 +305,7 @@ addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();document.getElementById('pal').classList.contains('open')?palClose():palOpen();}
   else if(e.key==='/'&&!typing&&!document.getElementById('pal').classList.contains('open')){e.preventDefault();palOpen();}
 });
+addEventListener(OPEN_PAL_EVENT,palOpen);
 // like - mikedev.site exact port (chunk 993-…): heart spring 500/15 (keyed remount),
 // count roll y ±100% .3s, canvas confetti count 40 gikan sa button center inig like,
 // liked = border accent/40 + bg accent/10 + text accent, busy = opacity .6
@@ -485,12 +556,15 @@ document.addEventListener('click',function(e){
   const s=tapEl(e);
   if(s&&s!=='none')sfx(s);
 });
-// ---- command palette filter — group-aware (tago ang group kung walay match) ----
+// ---- command palette filter — group-aware (tago ang group kung walay match) + empty state ----
 function palFilter(q){
   q=(q||'').toLowerCase();
+  let visible=0;
   document.querySelectorAll('#palList a').forEach(a=>{
     const t=(a.textContent+' '+(a.dataset.t||'')).toLowerCase();
-    a.style.display=!q||t.includes(q)?'':'none';
+    const show=!q||t.includes(q);
+    a.style.display=show?'':'none';
+    if(show)visible++;
   });
   document.querySelectorAll('#palList .pal-group').forEach(g=>{
     let el=g.nextElementSibling,vis=false;
@@ -500,6 +574,8 @@ function palFilter(q){
     }
     g.style.display=vis?'':'none';
   });
+  const e=document.querySelector('#palList .pal-empty');
+  if(e){e.hidden=visible>0;const s=e.querySelector('span');if(s)s.textContent=q}
   palIdx=0;palPaint();
 }
 (function(){
