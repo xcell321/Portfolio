@@ -83,7 +83,7 @@ window.PAL=<?=json_encode($palData, JSON_UNESCAPED_SLASHES|JSON_HEX_TAG|JSON_HEX
 window.PAL_ICONS=<?=json_encode($palIcons, JSON_UNESCAPED_SLASHES|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?>;
 window.AI_ICONS={open:<?=json_encode($aiIcons['circle'])?>,send:<?=json_encode($aiIcons['send'])?>,close:<?=json_encode($aiIcons['close'])?>};
 </script>
-<script src="assets/js/main.js?v=20261018m"></script>
+<script src="assets/js/main.js?v=20261018n"></script>
 <script>
 // stub so the nav hand button doesn't ReferenceError while the ES module loads
 window.toggleHandTracking = window.toggleHandTracking || function () {

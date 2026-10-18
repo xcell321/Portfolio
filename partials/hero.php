@@ -1,3 +1,8 @@
+<?php
+$statusLines = array_values((array)token('hero.status_lines', ['BUILDING THINGS']));
+$statusHour  = (int)(new DateTime('now', new DateTimeZone('Asia/Manila')))->format('G');
+$statusNow   = $statusLines[intdiv($statusHour, 6) % max(1, count($statusLines))] ?? ($statusLines[0] ?? 'BUILDING THINGS');
+?>
 <header class="hero" id="top">
   <canvas id="heroDots" aria-hidden="true"></canvas>
   <div class="orb orb-1" aria-hidden="true"></div>
@@ -11,7 +16,7 @@
       <a class="pill" href="#contact"><span class="dot"></span><?=e(token('hero.badge'))?> <?=icon('arrow',14)?></a>
       <button class="pill like<?=!empty($liked_now)?' liked':''?>" id="likePillTop" onclick="like(event)" data-sound="none" data-on="<?=e(token('like.on','You liked this'))?>" data-off="<?=e(token('like.off','Like this portfolio'))?>" title="Like" aria-label="<?=!empty($liked_now)?'Unlike':e(token('like.off','Like this portfolio'))?>" aria-pressed="<?=!empty($liked_now)?'true':'false'?>"><?=icon('heart',14)?> <span id="likeLabelTop"><?=!empty($liked_now)?e(token('like.on','You liked this')):e(token('like.off','Like this portfolio'))?></span> <span class="like-num" id="likeNumWrap"><span id="likeNumTop"><?=$like_total?></span></span></button>
     </div>
-    <div class="meta-mono"><?=e(strtoupper(token('location')))?> &nbsp;·&nbsp; <span id="clock">--:--</span> &nbsp;·&nbsp; <span id="statusLine"><?=e(token('hero.status_line'))?></span></div>
+    <div class="meta-mono"><?=e(strtoupper(token('location')))?> &nbsp;·&nbsp; <span id="clock">--:--</span> &nbsp;·&nbsp; <span id="statusLine" data-lines='<?=e(json_encode($statusLines, JSON_UNESCAPED_UNICODE))?>'><?=e($statusNow)?></span></div>
   </div>
 
   <div class="hero-grid">

@@ -22,7 +22,7 @@ return [
   'hero.desc'     => 'I take web and mobile products from the first sketch to the shipped release, so nothing gets lost in the handoff.',
   'hero.cta_work' => 'See selected work ↓',
   'hero.sticker'  => 'OPEN TO WORK • FREELANCING • COLLABS • ',
-  'hero.status_line' => 'BUILDING THINGS',
+  'hero.status_lines' => ['LATE-NIGHT GRINDS 🖥️', 'BUILDING MY PROJECTS ⚙️', 'LEARNING SOMETHING NEW 📚', 'CODING LATE NIGHTS ⌨️'],
   'hero.sub_role'  => 'Full Stack Developer & Designer',
   'hero.sub_place' => 'from the Philippines.',
   'hero.hover'     => 'hover me',

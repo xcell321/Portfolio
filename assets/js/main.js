@@ -404,6 +404,14 @@ function setDuty(on){
   const c=document.getElementById('clock');
   function tick(){try{c.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Manila'})}catch(e){}}
   tick();setInterval(tick,30000);
+  const sl=document.getElementById('statusLine');
+  if(sl){let L=[];try{L=JSON.parse(sl.dataset.lines||'[]')}catch(e){}
+    if(L.length){
+      const h=()=>{try{return +new Intl.DateTimeFormat('en-US',{hour:'numeric',hourCycle:'h23',timeZone:'Asia/Manila'}).format(new Date())}catch(e){return new Date().getHours()}};
+      const paintSL=()=>{const t=L[Math.floor(h()/6)%L.length];if(sl.textContent!==t)sl.textContent=t;};
+      paintSL();setInterval(paintSL,60000);
+    }
+  }
   const pc=document.getElementById('photoCard');
   // 3D tilt on pointer (±14°, spring 150/18) + duty flip on hover/unhover
   // useSpring approximation: current value chases the target via lerp .12/frame
