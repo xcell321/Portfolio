@@ -929,3 +929,157 @@ function popSticker(ev){
     }
   });
 })();
+// ---- AI chat — mikedev chunk 165 (module 22165) UI/UX EXACT port.
+// Puro UI ra ni; ang API (mikedev: GET /api/copilot-token + POST /api/copilot/chat, stream SSE)
+// WALA gi-apil. Ibutang ang imong integration sa askAI() sa ubos puhon.
+// Flow karon: sama sa mikedev nga "unconfigured" path → mo-gawas ang pula nga error bubble.
+// Details: fab 56→240 pill pag scroll>100 (desktop, dili open) + inline input Enter-to-send,
+// overlay click close, body lock (position:fixed + top:-scrollY), open-ai-chat event,
+// welcome message, typing dots, markdown renderer (bold/code/h-/list), error bubble.
+(function(){
+  const W=document.getElementById('aiWidget');if(!W)return;
+  const fab=document.getElementById('aiFab'), fabBtn=document.getElementById('aiFabBtn'), fabIc=document.getElementById('aiFabIc');
+  const inline=document.getElementById('aiInline'), inlineInput=document.getElementById('aiInlineInput');
+  const ov=document.getElementById('aiOv'), panel=document.getElementById('aiPanel');
+  const closeBtn=document.getElementById('aiClose'), msgs=document.getElementById('aiMsgs');
+  const ta=document.getElementById('aiInput'), sendBtn=document.getElementById('aiSend');
+  const IC=window.AI_ICONS||{}, OWNER=W.getAttribute('data-owner')||'me';
+  let open=false, busy=false, error=null, messages=[];
+  const mq=matchMedia('(max-width: 767px)');let mobile=mq.matches;
+  mq.addEventListener('change',e=>{mobile=e.matches;syncFab()});
+
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const bold=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  // mikedev exact inline markdown renderer (chunk 165)
+  function md(src){
+    return String(src).split(/(```[\s\S]*?```|`[^`]+`)/g).map(p=>{
+      if(p.slice(0,3)==='```'&&p.slice(-3)==='```'){
+        const raw=p.slice(3,-3).trim(), lines=raw.split('\n'), lang=lines[0].trim();
+        const code=lines.length>1?lines.slice(1).join('\n'):raw;
+        return '<pre>'+(lang?'<div class="ai-lang">'+esc(lang)+'</div>':'')+'<code>'+esc(code)+'</code></pre>';
+      }
+      if(p[0]==='`'&&p.slice(-1)==='`') return '<code class="inline">'+esc(p.slice(1,-1))+'</code>';
+      return p.split('\n').map(line=>{
+        const t=line.trim();
+        if(t==='---'||t==='***'||t==='___') return '<hr>';
+        if(t.slice(0,4)==='### ') return '<h3>'+bold(t.slice(4))+'</h3>';
+        if(t.slice(0,3)==='## ') return '<h2>'+bold(t.slice(3))+'</h2>';
+        if(t.slice(0,2)==='# ') return '<h1>'+bold(t.slice(2))+'</h1>';
+        let m=line.match(/^(\s*)([-•*])\s(.+)$/);
+        if(m) return '<div class="ai-li" style="margin-left:'+(8*m[1].length)+'px"><span class="b">•</span><span>'+bold(m[3])+'</span></div>';
+        m=line.match(/^(\s*)(\d+)\.\s(.+)$/);
+        if(m) return '<div class="ai-li" style="margin-left:'+(8*m[1].length)+'px"><span class="n">'+m[2]+'.</span><span>'+bold(m[3])+'</span></div>';
+        if(t==='') return '<div class="ai-sp"></div>';
+        return '<div>'+bold(line)+'</div>';
+      }).join('');
+    }).join('');
+  }
+  const DOTS='<span class="ai-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span>';
+  function render(){
+    let html=messages.map(m=>{
+      if(m.role==='user') return '<div class="ai-msg user"><div class="ai-bubble"><p>'+esc(m.content)+'</p></div></div>';
+      const body=m.content===''?DOTS:'<div class="ai-md">'+md(m.content)+'</div>';
+      return '<div class="ai-msg bot"><div class="ai-bubble">'+body+'</div></div>';
+    }).join('');
+    const last=messages[messages.length-1];
+    if(busy&&last&&last.content!=='') html+='<div class="ai-typing"><div class="ai-bubble">'+DOTS+'</div></div>';
+    if(error) html+='<div class="ai-err"><div>'+esc(error)+'</div></div>';
+    msgs.innerHTML=html;
+    msgs.scrollTop=msgs.scrollHeight;
+  }
+
+  // ---- INTEGRATION POINT (puhon) -------------------------------------------
+  // Ibutang dinhi ang imong API. Pananglitan:
+  //   const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+  //     body:JSON.stringify({messages:payload})});
+  //   if(!r.ok) throw new Error('API request failed: '+r.status);
+  //   // kung stream: basahon ang reader ug tawagon ang onDelta(chunk) kada delta
+  //   // kung dili stream: const d=await r.json(); onDelta(d.choices[0].message.content);
+  // Karon (walay API) → same "unconfigured" error path sa mikedev.
+  async function askAI(payload,onDelta){ // eslint-disable-line no-unused-vars
+    throw new Error('The AI assistant is not configured yet.');
+  }
+  function payloadFor(text){
+    return [{role:'system',content:''}].concat(
+      messages.filter(m=>m.id!=='welcome').map(m=>({role:m.role,content:m.content})),
+      [{role:'user',content:text}]
+    );
+  }
+  // --------------------------------------------------------------------------
+
+  async function send(text,fromInline){
+    const body=(text===undefined?ta.value:text).trim();
+    if(!body||busy)return;
+    messages.push({id:Date.now().toString(),role:'user',content:body,timestamp:new Date});
+    if(fromInline&&!open)openChat();
+    ta.value='';inlineInput.value='';syncSend();
+    busy=true;error=null;syncSend();
+    const aid=(Date.now()+1).toString();
+    const asst={id:aid,role:'assistant',content:'',timestamp:new Date};
+    messages.push(asst);render();
+    const payload=payloadFor(body);
+    try{
+      await askAI(payload,chunk=>{asst.content+=chunk;render();});
+    }catch(e){
+      console.error('Chat error:',e);
+      error=(e instanceof Error?e.message:'Failed to send message');
+      messages=messages.filter(m=>m.id!==aid);
+    }finally{busy=false;syncSend();render();}
+  }
+  function syncSend(){
+    sendBtn.disabled=!ta.value.trim()||busy;
+    ta.disabled=busy;
+    syncFab();
+  }
+  function syncFab(){
+    const scrolled=window.scrollY>100;
+    const canPeek=scrolled&&!open&&!mobile;
+    fab.classList.toggle('peek',canPeek);
+    inline.classList.toggle('show',canPeek);
+    const state=open?'close':(canPeek&&inlineInput.value.trim()?'send':'open');
+    fabIc.innerHTML=IC[state]||IC.open||'';
+    fabBtn.setAttribute('aria-label',state==='close'?'Close AI chat':state==='send'?'Send message':'Toggle AI chat');
+  }
+  function openChat(){
+    if(open)return;
+    open=true;error=null;
+    panel.classList.add('show');ov.classList.add('show');
+    syncFab();
+    if(messages.length===0)messages.push({id:'welcome',role:'assistant',content:"Hi! I'm "+OWNER+"'s AI assistant. I can answer questions about his work, skills, and availability. How can I help you today?",timestamp:new Date});
+    render();
+    const y=window.scrollY;
+    document.body.style.position='fixed';document.body.style.top='-'+y+'px';document.body.style.width='100%';document.body.style.overflowY='scroll';
+    document.body.setAttribute('data-chat-open','true');
+    inlineInput.blur();ta.focus();
+  }
+  function closeChat(){
+    if(!open)return;
+    open=false;
+    panel.classList.remove('show');ov.classList.remove('show');
+    syncFab();
+    const top=document.body.style.top;
+    document.body.style.position='';document.body.style.top='';document.body.style.width='';document.body.style.overflowY='';
+    document.body.removeAttribute('data-chat-open');
+    window.scrollTo(0,-1*parseInt(top||'0',10));
+  }
+  fabBtn.addEventListener('click',()=>{
+    if(fab.classList.contains('peek')&&inlineInput.value.trim()) send(inlineInput.value,true);
+    else (open?closeChat():openChat());
+  });
+  ov.addEventListener('click',closeChat);
+  ov.addEventListener('wheel',e=>e.preventDefault(),{passive:false});
+  ov.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  panel.addEventListener('wheel',e=>e.stopPropagation());
+  panel.addEventListener('touchmove',e=>e.stopPropagation());
+  closeBtn.addEventListener('click',closeChat);
+  inlineInput.addEventListener('input',syncFab);
+  inlineInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&inlineInput.value.trim())send(inlineInput.value,true);});
+  ta.addEventListener('input',syncSend);
+  ta.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(ta.value.trim()&&!busy)send();}
+  });
+  sendBtn.addEventListener('click',()=>send());
+  addEventListener('scroll',syncFab,{passive:true});
+  addEventListener('open-ai-chat',openChat);
+  syncFab();
+})();
