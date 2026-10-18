@@ -433,6 +433,7 @@ function sfx(name){
     else if(name==='click')tone({freq:520,to:340,dur:.04,type:'triangle',vol:.03});
     else if(name==='pop'){tone({freq:260,to:900,dur:.12,type:'triangle',vol:.07});[.06,.11,.17].forEach(function(s,i){tone({freq:1500+350*i+200*Math.random(),start:s,dur:.09,vol:.025})});}
     else if(name==='chime'){tone({freq:1318.5,dur:.5,vol:.05});tone({freq:1975.5,start:.09,dur:.6,vol:.04});}
+    else if(name==='sticker'){[0,.045,.09].forEach(function(s,i){tone({freq:520+180*i+120*Math.random(),to:980+260*i,dur:.11,type:'triangle',vol:.055})});}
     else if(name==='on'){tone({freq:660,dur:.08,vol:.05});tone({freq:990,start:.07,dur:.12,vol:.05});}
     else if(name==='off'){tone({freq:990,dur:.08,vol:.04});tone({freq:560,start:.07,dur:.12,vol:.04});}
   }catch(e){}
@@ -502,27 +503,43 @@ function palFilter(q){
   palIdx=0;palPaint();
 }
 (function(){
-  // rotating words: Scale. -> Inspire. -> Evolve. -> Scale…, period 4000ms,
-  // exit 200ms (y 0 -> -0.3em, opacity -> 0, blur -> 6px), gap ~70ms blank, enter 300ms (y +0.3em -> 0)
-  const el=document.getElementById('rotWord');
-  if(!el)return;
+  // mikedev.site EXACT port sa rotating word (page chunk module 67979 component `F`):
+  // mode="sync" AnimatePresence, word top .2em sulod sa overflow mask (-top .2em / -bottom .25em);
+  // initial y 110% opacity 0 blur(6px) -> animate y 0 opacity 1 blur(0); exit y -110% opacity 0 blur(6px);
+  // transition duration .7s ease [.22,1,.36,1]. (mike: first change 2200ms, tapos 2600ms interval)
+  const view=document.querySelector('#rotHolder .rot-view');
+  const first=document.getElementById('rotWord');
+  if(!view||!first)return;
   let words=['Scale.','Inspire.','Evolve.'];
-  try{const w=JSON.parse(el.dataset.words||'null');if(Array.isArray(w)&&w.length)words=w}catch(e){}
-  const sr=document.getElementById('rotSr');
+  try{const w=JSON.parse(first.dataset.words||'null');if(Array.isArray(w)&&w.length)words=w}catch(e){}
   if(!words.length)return;
-  let i=words.indexOf((el.textContent||'').trim());
+  const sr=document.getElementById('rotSr');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FIRST=2200, HOLD=2600, DUR=700;     // mike exact: first change 2200ms, tapos 2600ms interval, 0.7s transition
+  let i=words.indexOf((first.textContent||'').trim());
   if(i<0)i=0;
-  setInterval(()=>{
-    i=(i+1)%words.length;
-    el.classList.add('rot-out');
+  let cur=first, wait=FIRST;
+  first.classList.add('in');                // una nga word: static, walay initial animation (initial={false})
+  (function cycle(){
     setTimeout(()=>{
-      el.textContent=words[i];
+      wait=HOLD;
+      i=(i+1)%words.length;
       if(sr)sr.textContent=words[i];
-      el.classList.remove('rot-out');
-      el.classList.add('rot-in');
-      setTimeout(()=>el.classList.remove('rot-in'),320);
-    },200);
-  },4000);
+      if(reduced){cur.textContent=words[i];cycle();return;}
+      const old=cur;                        // daan nga word mosaka (exit y -110%)
+      old.classList.remove('in');
+      old.classList.add('out');
+      const nw=document.createElement('span');   // bag-o gikan sa ubos (initial y 110%)
+      nw.className='rot-word';
+      nw.textContent=words[i];
+      view.appendChild(nw);
+      void nw.offsetWidth;                  // force reflow aron mo-take ang start state
+      nw.classList.add('in');
+      cur=nw;
+      setTimeout(()=>old.remove(),DUR+40);
+      cycle();
+    },wait);
+  })();
 })();
 // ---- hero dot grid — mikedev.site EXACT port (de-minified module 67979, function v) ----
 // spacing 28 (1.6x sa low-end devices), repel radius 180, base dot = 1.2px rect @ rgba(255,255,255,.11),
@@ -699,6 +716,7 @@ function popSticker(ev){
   const x=ev&&ev.clientX!==undefined?ev.clientX:innerWidth*0.75;
   const y=ev&&ev.clientY!==undefined?ev.clientY:200;
   mikeConfetti(x,y,70);
+  sfx('sticker');                                  // tingog kada pisil (bisan spam) — sama kang Mike
   const badge=document.getElementById('stickerBadge');
   if(badge){badge.classList.remove('popped');void badge.offsetWidth;badge.classList.add('popped');setTimeout(()=>badge.classList.remove('popped'),600)}
   if(!n){try{localStorage.setItem('sticker_pops','1')}catch(e){}}

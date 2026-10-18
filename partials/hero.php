@@ -25,7 +25,7 @@
       $rotLong = (string)$rot0;
       foreach ($rot as $w) { if (strlen((string)$w) > strlen($rotLong)) $rotLong = (string)$w; }
       ?>
-      <h1 class="mega"><span class="rise-line" style="--rise-i:0"><span><?=str_replace('&amp;', '<span class="amp">&amp;</span>', e(token('hero.line1', 'I design & build')))?></span></span><span class="rise-line" style="--rise-i:1"><span><?=e(token('hero.line2', 'digital products'))?></span></span><span class="rise-line" style="--rise-i:2"><span><?=e(token('hero.line3', 'that'))?> <span class="rot-holder scale" id="rotHolder"><span class="rot-ghost" aria-hidden="true"><?=e($rotLong)?></span><span class="rot-view" aria-hidden="true"><span class="rot-word" id="rotWord" data-words="<?=e(json_encode($rot))?>"><?=e($rot0)?></span></span><span class="sr-only" id="rotSr"><?=e($rot0)?></span></span></span></span></h1>
+      <h1 class="mega"><span class="rise-line" style="--rise-i:0"><span><?=str_replace('&amp;', '<span class="amp">&amp;</span>', e(token('hero.line1', 'I design & build')))?></span></span><span class="rise-line" style="--rise-i:1"><span><?=e(token('hero.line2', 'digital products'))?></span></span><span class="rise-line" style="--rise-i:2"><span><?=e(token('hero.line3', 'that'))?> <span class="rot-holder scale" id="rotHolder"><span class="rot-ghost" aria-hidden="true"><?=e($rotLong)?></span><span class="rot-view" aria-hidden="true"><span class="rot-word in" id="rotWord" data-words="<?=e(json_encode($rot))?>"><?=e($rot0)?></span></span><span class="sr-only" id="rotSr"><?=e($rot0)?></span></span></span></span></h1>
     </div>
 
     <div class="hero-right">
