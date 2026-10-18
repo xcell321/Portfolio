@@ -926,12 +926,9 @@ function popSticker(ev){
     }
   });
 })();
-// ---- AI chat (UI only) ----
-// The API is not wired up yet. Plug the integration into askAI() below.
-// Without it, sending shows the "not configured" error bubble.
-// Details: fab 56→240 pill on scroll>100 (desktop, closed) + inline input Enter-to-send,
-// overlay click close, body lock (position:fixed + top:-scrollY), open-ai-chat event,
-// welcome message, typing dots, markdown renderer (bold/code/h-/list), error bubble.
+// ---- AI chat ----
+// Streams from api_chat.php (Google Gemini). Fab peeks to an inline input on scroll,
+// overlay click closes, body locks while open, markdown + typing dots + error bubble.
 (function(){
   const W=document.getElementById('aiWidget');if(!W)return;
   const fab=document.getElementById('aiFab'), fabBtn=document.getElementById('aiFabBtn'), fabIc=document.getElementById('aiFabIc');
@@ -984,16 +981,30 @@ function popSticker(ev){
     msgs.scrollTop=msgs.scrollHeight;
   }
 
-  // ---- INTEGRATION POINT ---------------------------------------------------
-  // Wire your API here. Example:
-  //   const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-  //     body:JSON.stringify({messages:payload})});
-  //   if(!r.ok) throw new Error('API request failed: '+r.status);
-  //   // stream: read the reader and call onDelta(chunk) for each delta
-  //   // non-stream: const d=await r.json(); onDelta(d.choices[0].message.content);
-  // Without an API, this stays in the "not configured" error path.
-  async function askAI(payload,onDelta){ // eslint-disable-line no-unused-vars
-    throw new Error('The AI assistant is not configured yet.');
+  // Streams SSE deltas from api_chat.php. Falls back to a JSON error if not SSE.
+  async function askAI(payload,onDelta){
+    const r=await fetch('api_chat.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:payload})});
+    const ct=(r.headers.get('Content-Type')||'');
+    if(ct.indexOf('text/event-stream')<0){
+      let msg='The AI assistant is unavailable right now.';
+      try{const j=await r.json();if(j&&j.error)msg=j.error;}catch(e){}
+      throw new Error(msg);
+    }
+    const reader=r.body.getReader(),dec=new TextDecoder();let buf='';
+    while(true){
+      const {value,done}=await reader.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      let i;
+      while((i=buf.indexOf('\n'))>=0){
+        const line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+        if(line.indexOf('data:')!==0)continue;
+        const d=line.slice(5).trim();
+        if(!d||d==='[DONE]')continue;
+        let j;try{j=JSON.parse(d);}catch(e){continue;}
+        if(j.error)throw new Error(j.error);
+        if(j.t)onDelta(j.t);
+      }
+    }
   }
   function payloadFor(text){
     return [{role:'system',content:''}].concat(
