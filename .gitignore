@@ -1,2 +1,7 @@
 # Production DB credentials on the deploy host — do not commit
 config/db.local.php
+
+# Local secrets (AI API key, etc.) — do not commit
+.env
+
+.env/example

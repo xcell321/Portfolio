@@ -1,3 +1,8 @@
+<?php
+$statusLines = array_values((array)token('hero.status_lines', ['BUILDING THINGS']));
+$statusHour  = (int)(new DateTime('now', new DateTimeZone('Asia/Manila')))->format('G');
+$statusNow   = $statusLines[intdiv($statusHour, 6) % max(1, count($statusLines))] ?? ($statusLines[0] ?? 'BUILDING THINGS');
+?>
 <header class="hero" id="top">
   <canvas id="heroDots" aria-hidden="true"></canvas>
   <div class="orb orb-1" aria-hidden="true"></div>
@@ -11,7 +16,7 @@
       <a class="pill" href="#contact"><span class="dot"></span><?=e(token('hero.badge'))?> <?=icon('arrow',14)?></a>
       <button class="pill like<?=!empty($liked_now)?' liked':''?>" id="likePillTop" onclick="like(event)" data-sound="none" data-on="<?=e(token('like.on','You liked this'))?>" data-off="<?=e(token('like.off','Like this portfolio'))?>" title="Like" aria-label="<?=!empty($liked_now)?'Unlike':e(token('like.off','Like this portfolio'))?>" aria-pressed="<?=!empty($liked_now)?'true':'false'?>"><?=icon('heart',14)?> <span id="likeLabelTop"><?=!empty($liked_now)?e(token('like.on','You liked this')):e(token('like.off','Like this portfolio'))?></span> <span class="like-num" id="likeNumWrap"><span id="likeNumTop"><?=$like_total?></span></span></button>
     </div>
-    <div class="meta-mono"><?=e(strtoupper(token('location')))?> &nbsp;·&nbsp; <span id="clock">--:--</span> &nbsp;·&nbsp; <span id="statusLine"><?=e(token('hero.status_line'))?></span></div>
+    <div class="meta-mono"><?=e(strtoupper(token('location')))?> &nbsp;·&nbsp; <span id="clock">--:--</span> &nbsp;·&nbsp; <span id="statusLine" data-lines='<?=e(json_encode($statusLines, JSON_UNESCAPED_UNICODE))?>'><?=e($statusNow)?></span></div>
   </div>
 
   <div class="hero-grid">
@@ -33,7 +38,7 @@
         <div class="spin-badge" id="stickerBadge" onclick="popSticker(event)" title="Pssst… click me" style="cursor:pointer" aria-hidden="true">
           <svg viewBox="0 0 120 120"><defs><path id="cir" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0"/></defs>
           <text><textPath href="#cir"><?=e(token('hero.sticker'))?></textPath></text></svg>
-          <span class="wave"><?=icon('hand',30)?></span>
+          <span class="wave">👋</span>
         </div>
         <div class="photo-card" id="photoCard" title="<?=e(token('hero.hover'))?>">
           <div class="photo"><img class="layer top" draggable="false" src="<?=e(token('photo.duty'))?>" style="object-position:<?=e(token('photo.duty_pos'))?>;--z:1.5" alt="<?=e(token('owner_name'))?> on duty" onerror="this.remove()"><img class="layer bot" draggable="false" src="<?=e(token('photo.off'))?>" style="object-position:<?=e(token('photo.off_pos'))?>;--z:1.1" alt="<?=e(token('owner_name'))?> off duty" onerror="this.remove()"><div class="photo-glow" id="photoGlow" aria-hidden="true"></div><div class="photo-foot"><div><b><?=e(token('owner_name'))?></b><small><?=e(token('role'))?></small></div><span class="onduty" id="dutyBadge" data-on="<?=e(token('hero.duty_on'))?>" data-off="<?=e(token('hero.duty_off'))?>"><?=e(token('hero.duty_on'))?></span></div></div>

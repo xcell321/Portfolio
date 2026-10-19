@@ -17,6 +17,7 @@ function icon(string $name, int $size = 18): string {
     'linkedin' => '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 11v5M8 8v.1M12 16v-3a2 2 0 014 0v3M12 11v1"/>',
     'facebook' => '<path d="M14 8h2V5h-2a3 3 0 00-3 3v2H9v3h2v6h3v-6h2l1-3h-3V8.5c0-.3.2-.5.5-.5z"/>',
     'arrow' => '<path d="M7 17L17 7M9 7h8v8"/>',
+    'arrow_right' => '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
     'down'  => '<path d="M12 5v14m7-7-7 7-7-7"/>',
     'rocket' => '<path d="M12 15c5-4 7-9 7-12-3 0-8 2-12 7l-3 1 4 4 4 4 1-3z"/><circle cx="15" cy="9" r="1.5"/><path d="M9 12c-2 1-3 4-3 7 3 0 6-1 7-3"/>',
     'chart' => '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
@@ -41,6 +42,8 @@ function icon(string $name, int $size = 18): string {
     'check' => '<path d="M4 12.5l5 5L20 6.5"/>',
     'copy'  => '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
     'user' => '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+    'rotate' => '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+    'terminal' => '<path d="M4 17l6-5-6-5"/><path d="M12 19h8"/>',
   ];
   $inner = $P[$name] ?? $P['spark'];
   return '<svg width="'.$s.'" height="'.$s.'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$inner.'</svg>';
@@ -48,6 +51,6 @@ function icon(string $name, int $size = 18): string {
 
 /** Map an old emoji value to an icon name (legacy DB rows). */
 function icon_for_emoji(?string $v): string {
-  $map = ['🚀'=>'rocket','📊'=>'chart','📝'=>'note','🏗️'=>'building','🏗'=>'building','🛡️'=>'shield','🤖'=>'bot','🧠'=>'brain','📈'=>'chart','🏅'=>'award','👨🏻‍💻'=>'user','👨'=>'user'];
+  $map = ['🚀'=>'rocket','📊'=>'chart','📝'=>'note','🏗️'=>'building','🏗'=>'building','🛡️'=>'shield','🤖'=>'bot','🧠'=>'brain','📈'=>'chart','🏅'=>'award','📱'=>'mobile','🕹️'=>'command','🎛️'=>'command','👨🏻‍💻'=>'user','👨'=>'user'];
   return $map[$v] ?? 'spark';
 }
