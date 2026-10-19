@@ -3,7 +3,7 @@
 
 function fallback_projects(): array {
   return [
-    ['id'=>1,'num'=>'01','role'=>'Founder · Full Stack','year'=>'2026','title'=>'Project Alpha','desc'=>'Sample project. Tell me what to replace here.','tags'=>'PHP,MySQL,Tailwind','live_url'=>'#','case_url'=>'#','icon'=>'rocket'],
+    ['id'=>1,'num'=>'01','role'=>'Personal · Web App','year'=>'2026','title'=>'Remotee','desc'=>'A universal remote control for your home devices, built end to end with PHP, CSS and JavaScript.','tags'=>'PHP,MySQL,CSS,JavaScript','live_url'=>'https://remotee.infinityfreeapp.com/','case_url'=>'https://remotee.infinityfreeapp.com/','icon'=>'mobile','image'=>'assets/img/work/remotee.png','image_mobile'=>'assets/img/work/remotee-mobile.png'],
     ['id'=>2,'num'=>'02','role'=>'Freelance · Web App','year'=>'2025','title'=>'Project Beta','desc'=>'Sample project. Tell me what to add here.','tags'=>'PHP,JavaScript,CSS','live_url'=>'#','case_url'=>'#','icon'=>'chart'],
     ['id'=>3,'num'=>'03','role'=>'Personal · UI/UX','year'=>'2025','title'=>'Project Gamma','desc'=>'Sample project. Every description is yours to edit.','tags'=>'Figma,PHP,MySQL','live_url'=>'#','case_url'=>'#','icon'=>'note'],
     ['id'=>4,'num'=>'04','role'=>'Client Work · Website','year'=>'2024','title'=>'Project Delta','desc'=>'Sample project for a client portfolio showcase.','tags'=>'PHP,Bootstrap,MySQL','live_url'=>'#','case_url'=>'#','icon'=>'building'],

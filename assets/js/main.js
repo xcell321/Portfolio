@@ -1,37 +1,32 @@
 
+// smooth scrolling (Lenis, vendored) — same duration/easing/multipliers as the reference build.
+// skipped on touch pointers, low-end devices and when reduced motion is requested.
 (function(){
+  if(!window.Lenis)return;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  if('scrollingElement' in document===false)return;
-  const s=document.createElement('script');
-  s.src='https://unpkg.com/lenis@1/dist/lenis.min.js';
-  s.async=true;
-  s.onload=function(){
-    try{
-      const Lenis=window.Lenis||window.lenis;
-      if(!Lenis)return;
-      let raf=0,hidden=false;
-      const lenis=new Lenis({
-        duration:.7,
-        easing:function(t){return 1-Math.pow(1-t,3)},
-        orientation:'vertical',
-        gestureOrientation:'vertical',
-        smoothWheel:true,
-        wheelMultiplier:1.2,
-        touchMultiplier:1.5,
-        infinite:false
-      });
-      window.lenis=lenis;
-      function loop(time){
-        // keep the rAF loop running; only pause lenis.raf while the tab is hidden
-        if(!document.hidden&&!hidden)lenis.raf(time);
-        raf=requestAnimationFrame(loop);
-      }
-      raf=requestAnimationFrame(loop);
-      document.addEventListener('visibilitychange',function(){hidden=document.hidden});
-      addEventListener('pagehide',function(){cancelAnimationFrame(raf);lenis.destroy();window.lenis=null},{once:true});
-    }catch(e){}
-  };
-  document.head.appendChild(s);
+  const coarse=matchMedia('(pointer: coarse)').matches||navigator.maxTouchPoints>0;
+  const conn=navigator.connection||{};
+  const lowEnd=conn.saveData===true||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)||(navigator.deviceMemory&&navigator.deviceMemory<=4);
+  if(coarse||lowEnd)return;
+  let raf=0;
+  const lenis=new Lenis({
+    duration:.7,
+    easing:function(t){return 1-Math.pow(1-t,3)},
+    orientation:'vertical',
+    gestureOrientation:'vertical',
+    smoothWheel:true,
+    wheelMultiplier:1.2,
+    touchMultiplier:1.5,
+    infinite:false
+  });
+  window.lenis=lenis;
+  function loop(time){
+    // keep the rAF loop running; only pause lenis.raf while the tab is hidden
+    if(!document.hidden)lenis.raf(time);
+    raf=requestAnimationFrame(loop);
+  }
+  raf=requestAnimationFrame(loop);
+  addEventListener('pagehide',function(){cancelAnimationFrame(raf);lenis.destroy();window.lenis=null},{once:true});
 })();
 // ==========================================================================
 // anchor clicks → lenis.scrollTo:
@@ -62,20 +57,22 @@ document.addEventListener('click',function(e){
   const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target)}})},{rootMargin:'-60px 0px -60px 0px'});
   document.querySelectorAll('.rv').forEach(el=>io.observe(el));
 })();
-// floating pill nav on scroll (transparent at top, pill once scrolled)
-addEventListener('scroll',()=>{
-  // nav starts fully transparent, becomes the pill only after scrolling >24px
-  const sc=scrollY>24;
-  const nav=document.querySelector('.nav-in');
-  if(nav&&!nav.classList.contains('force-pill'))nav.classList.toggle('scrolled',sc);
-  const hdr=document.querySelector('.site-header');
-  if(hdr) hdr.classList.toggle('scrolled',scrollY>40);
-  document.querySelector('.nav')?.classList.toggle('scrolled',scrollY>40);
-  document.getElementById('toTop')?.classList.toggle('show',scrollY>600);
-},{passive:true});
-// apply scroll state on load too — mid-page reloads skip the scroll event, so the pill
-// must render immediately instead of waiting for the first wheel move
-(function(){const y=window.scrollY||window.pageYOffset||0;document.querySelector('.nav-in')?.classList.toggle('scrolled',y>24)})();
+// floating pill nav on scroll (transparent at top, pill once scrolled) — rAF-throttled,
+// elements resolved once instead of per scroll event
+(function(){
+  const nav=document.querySelector('.nav-in'),hdr=document.querySelector('.site-header'),tt=document.getElementById('toTop');
+  let tick=false;
+  function apply(){
+    tick=false;
+    const y=window.scrollY||window.pageYOffset||0;
+    // nav starts fully transparent, becomes the pill only after scrolling >24px
+    if(nav&&!nav.classList.contains('force-pill'))nav.classList.toggle('scrolled',y>24);
+    if(hdr)hdr.classList.toggle('scrolled',y>40);
+    if(tt)tt.classList.toggle('show',y>600);
+  }
+  addEventListener('scroll',()=>{if(!tick){tick=true;requestAnimationFrame(apply)}},{passive:true});
+  apply();   // mid-page reloads skip the scroll event, so paint the state immediately
+})();
 const ACCENTS=[['Lime','#d4fd73'],['Mint','#6ee7b7'],['Sky','#7dd3fc'],['Violet','#c4b5fd'],['Pink','#f9a8d4'],['Peach','#fdba74'],['Sun','#fde047']];
 function paintSwatches(){
   const box=document.getElementById('swatches');if(!box||box.children.length)return;
@@ -175,12 +172,34 @@ function toggleNav(){
   addEventListener('load',()=>{if(active)place(active)});
   paint();
 })();
-// accordion
-document.querySelectorAll('.acc-head').forEach(b=>b.addEventListener('click',()=>{
-  const p=b.parentElement,was=p.classList.contains('open');
-  document.querySelectorAll('.acc').forEach(a=>a.classList.remove('open'));
-  if(!was)p.classList.add('open');
-}));
+// skills: accordion (one row at a time) + click a word to pin it
+(function(){
+  const rows=[...document.querySelectorAll('#about .sk-row')];
+  rows.forEach(r=>{
+    const b=r.querySelector('.sk-head-btn');if(!b)return;
+    b.addEventListener('click',()=>{
+      const was=r.classList.contains('open');
+      rows.forEach(o=>{o.classList.remove('open');o.querySelector('.sk-head-btn')?.setAttribute('aria-expanded','false')});
+      if(!was){r.classList.add('open');b.setAttribute('aria-expanded','true')}
+    });
+  });
+  document.querySelectorAll('#about .sk-word').forEach(w=>{
+    w.addEventListener('click',()=>{
+      const on=w.classList.contains('on');
+      document.querySelectorAll('#about .sk-word.on').forEach(o=>{o.classList.remove('on');o.setAttribute('aria-expanded','false')});
+      if(!on){w.classList.add('on');w.setAttribute('aria-expanded','true')}
+    });
+  });
+})();
+// feature cards: spotlight glow follows the cursor
+document.querySelectorAll('.spot').forEach(c=>{
+  c.addEventListener('pointermove',e=>{
+    const r=c.getBoundingClientRect();
+    c.style.setProperty('--mx',(e.clientX-r.left)+'px');
+    c.style.setProperty('--my',(e.clientY-r.top)+'px');
+  });
+  c.addEventListener('pointerleave',()=>{c.style.removeProperty('--mx');c.style.removeProperty('--my')});
+});
 // chips select
 document.querySelectorAll('[data-chips]').forEach(box=>{
   box.addEventListener('click',e=>{
@@ -191,20 +210,123 @@ function syncChips(box){
   const v=[...box.querySelectorAll('.chip.on')].map(c=>c.textContent).join(', ');
   document.getElementById(box.dataset.chips).value=v;
 }
-// drag toolkit
-let dragEl=null;
-document.querySelectorAll('.tool').forEach(t=>{
-  t.draggable=true;
-  t.addEventListener('dragstart',()=>dragEl=t);
-  t.addEventListener('dragover',e=>e.preventDefault());
-  t.addEventListener('drop',e=>{e.preventDefault();if(dragEl&&dragEl!==t){const tk=document.getElementById('toolkit');const r=[...tk.children];const i=r.indexOf(dragEl),j=r.indexOf(t);i<j?tk.insertBefore(dragEl,t.nextSibling):tk.insertBefore(dragEl,t)}});
-});
-function tidyUp(){const tk=document.getElementById('toolkit');[...tk.children].sort((a,b)=>a.textContent.localeCompare(b.textContent)).forEach(n=>tk.appendChild(n));toast('Tidy!')}
-// tilt on project cards
-document.querySelectorAll('.proj').forEach(c=>{
-  c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform=`perspective(900px) rotateX(${-y*5}deg) rotateY(${x*6}deg) translateY(-4px)`});
-  c.addEventListener('mouseleave',()=>c.style.transform='');
-});
+// toolkit: free pointer drag; "Tidy up" drops every chip back into place
+function tidyUp(){
+  const box=document.getElementById('toolkit');if(!box)return;
+  const ul=box.querySelector('.kit-chips')||box;
+  ul.classList.add('tidy');
+  [...ul.children].forEach(n=>{n.style.transform='';n.classList.remove('dragging')});
+  const btn=document.querySelector('.kit-tidy');if(btn)btn.hidden=true;
+  setTimeout(()=>ul.classList.remove('tidy'),420);
+  toast('Tidy!');
+}
+(function(){
+  const box=document.getElementById('toolkit');if(!box)return;
+  const btn=document.querySelector('.kit-tidy');
+  box.querySelectorAll('.tool').forEach(chip=>{
+    let sx=0,sy=0,ox=0,oy=0,active=false,moved=false;
+    chip.addEventListener('pointerdown',e=>{
+      if(e.button!==0)return;
+      active=true;moved=false;sx=e.clientX;sy=e.clientY;
+      const m=/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(chip.style.transform||'');
+      ox=m?+m[1]:0;oy=m?+m[2]:0;
+      chip.setPointerCapture(e.pointerId);
+      chip.classList.add('dragging');
+    });
+    chip.addEventListener('pointermove',e=>{
+      if(!active)return;
+      const dx=e.clientX-sx,dy=e.clientY-sy;
+      if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;
+      chip.style.transform='translate('+(ox+dx)+'px,'+(oy+dy)+'px)';
+    });
+    const end=()=>{if(!active)return;active=false;chip.classList.remove('dragging');if(moved&&btn)btn.hidden=false};
+    chip.addEventListener('pointerup',end);
+    chip.addEventListener('pointercancel',end);
+  });
+})();
+// terminal: quick commands or free typing, output appended like a shell
+(function(){
+  const term=document.getElementById('term');if(!term)return;
+  const body=document.getElementById('termBody');
+  const bar=term.querySelector('.term-bar');
+  let data={};try{data=JSON.parse(term.dataset.term||'{}')}catch(e){}
+  const out=data.out||{};
+  const prompt=String(data.prompt||'~')+' ';
+  const intro=Array.isArray(data.intro)?data.intro:[];
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const push=(cls,html)=>{const n=document.createElement('div');n.className=cls;n.innerHTML=html;body.appendChild(n);body.scrollTop=body.scrollHeight;return n};
+  const outLines=ls=>(Array.isArray(ls)?ls:[ls]).forEach(l=>push('term-line term-out',esc(l)));
+  let row=null,input=null;
+  function ensureInput(){
+    if(row)return input;
+    row=document.createElement('div');row.className='term-line term-inrow';
+    row.innerHTML='<span class="term-prompt">'+esc(prompt)+'</span>';
+    input=document.createElement('input');input.className='term-input';input.type='text';input.spellcheck=false;input.autocomplete='off';input.setAttribute('aria-label','Terminal input');
+    input.addEventListener('keydown',e=>{if(e.key==='Enter'){const v=input.value;input.value='';if(v.trim())run(v.trim())}});
+    row.appendChild(input);body.appendChild(row);body.scrollTop=body.scrollHeight;
+    return input;
+  }
+  function run(cmd){
+    const c=cmd.toLowerCase().trim();
+    push('term-line','<span class="term-prompt">'+esc(prompt)+'</span><span class="term-cmd">'+esc(cmd)+'</span>');
+    if(c==='clear'){body.innerHTML='';row=null;input=null;ensureInput();input.focus();return}
+    if(out[c])outLines(out[c]);else outLines('zsh: command not found: '+c);
+    ensureInput();input.focus();
+  }
+  bar&&bar.querySelectorAll('.term-btn').forEach(b=>b.addEventListener('click',()=>run(b.dataset.cmd||'')));
+  body.addEventListener('click',()=>{ensureInput();input&&input.focus()});
+  let started=false;
+  function start(){
+    if(started)return;started=true;
+    if(reduce||!intro.length){intro.forEach(c=>{push('term-line','<span class="term-prompt">'+esc(prompt)+'</span><span class="term-cmd">'+esc(c)+'</span>');if(out[c.toLowerCase()])outLines(out[c.toLowerCase()])});ensureInput();return}
+    let i=0;
+    (function next(){
+      if(i>=intro.length)return;
+      const cmd=intro[i++],line=push('term-line','<span class="term-prompt">'+esc(prompt)+'</span><span class="term-cmd"></span>');
+      const span=line.querySelector('.term-cmd');let k=0;
+      const t=setInterval(()=>{
+        span.textContent=cmd.slice(0,++k);body.scrollTop=body.scrollHeight;
+        if(k>=cmd.length){clearInterval(t);const c=cmd.toLowerCase();if(out[c])outLines(out[c]);ensureInput();setTimeout(next,360)}
+      },45);
+    })();
+  }
+  const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){io.disconnect();start()}})},{rootMargin:'0px 0px -15% 0px'});
+  const r=term.getBoundingClientRect();
+  if(r.top<window.innerHeight&&r.bottom>0)start();else io.observe(term);
+  setTimeout(start,4000);
+})();
+// projects scrollytelling: the article in view drives the sticky preview + tracker
+(function(){
+  const list=document.querySelector('.work-list');if(!list)return;
+  const items=[].slice.call(list.querySelectorAll('.work-item'));
+  if(!items.length)return;
+  const shots=[].slice.call(document.querySelectorAll('.work-preview .shot'));
+  const phones=[].slice.call(document.querySelectorAll('.work-preview .phone-shot'));
+  const tabs=[].slice.call(document.querySelectorAll('.work-preview .tab'));
+  const urlEl=document.querySelector('.work-preview .url-text');
+  const domains=shots.map(s=>s.dataset.domain||'');
+  let cur=-1;
+  function go(i){
+    if(i===cur||i<0||i>=items.length)return;
+    cur=i;
+    items.forEach((el,k)=>el.classList.toggle('on',k===i));
+    shots.forEach((el,k)=>el.classList.toggle('on',k===i));
+    phones.forEach((el,k)=>el.classList.toggle('on',k===i));
+    tabs.forEach((el,k)=>{el.classList.toggle('on',k===i);el.setAttribute('aria-current',k===i?'true':'false')});
+    if(urlEl&&domains[i])urlEl.textContent=domains[i];
+  }
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting)go(items.indexOf(e.target))});
+  },{rootMargin:'-45% 0px -50% 0px'});
+  items.forEach(el=>io.observe(el));
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    const el=items[+t.dataset.index];if(!el)return;
+    const y=el.getBoundingClientRect().top+window.scrollY-80;
+    const l=window.lenis;
+    l&&l.scrollTo?l.scrollTo(y,{duration:1.1}):window.scrollTo({top:y,behavior:'smooth'});
+  }));
+})();
 // command palette:
 // groups Navigate/Projects/Actions/Accent color/Elsewhere (a group shows only when it has a match),
 // query filter over label+keywords+group, ↑↓ + hover index + scrollIntoView{block:'nearest'},
@@ -446,22 +568,27 @@ function setDuty(on){
   if(!hero||!inner)return;
   // matchMedia(min-width:1024px): mobile keeps static opacity 1
   const mq=matchMedia('(min-width: 1024px)');
-  let active=mq.matches,ticking=false;
+  let active=mq.matches,ticking=false,h=0,last='';
+  function measure(){h=hero.offsetHeight||inner.offsetHeight||0}
   function apply(){
     ticking=false;
-    if(!active){inner.style.opacity='';inner.style.transform='';return}
-    const h=hero.offsetHeight||inner.offsetHeight;
+    if(!active){if(last!==''){inner.style.opacity='';inner.style.transform='';last=''}return}
     if(h<=0)return;
     const p=Math.min(1,Math.max(0,(window.scrollY||window.pageYOffset||0)/h));   // progress 0..1 toward the hero end
     // transform pairs: opacity [0,.7]→[1,0] (linear), y [0,1]→[0,-120]
     const op=Math.max(0,1-p/.7);
     const y=(0-p)*120;
+    const sig=op.toFixed(4)+'|'+y.toFixed(2);
+    if(sig===last)return;                                  // skip redundant writes while scrolling elsewhere
+    last=sig;
     inner.style.opacity=op.toFixed(4);
     inner.style.transform='translate3d(0,'+y.toFixed(2)+'px,0)';
   }
   function onScroll(){if(!ticking){ticking=true;requestAnimationFrame(apply)}}
+  measure();
   addEventListener('scroll',onScroll,{passive:true});
-  mq.addEventListener&&mq.addEventListener('change',e=>{active=e.matches;onScroll()});
+  addEventListener('resize',function(){measure();last='';onScroll()});
+  mq.addEventListener&&mq.addEventListener('change',e=>{active=e.matches;measure();last='';onScroll()});
   apply();
 })();
 // back to top — lenis-aware: duration 1.1, same as the anchor helper
@@ -637,7 +764,7 @@ function palFilter(q){
   // low-end heuristic: spacing 1.6x + 33ms throttle + dpr 1
   const lowEnd=(navigator.hardwareConcurrency||4)<=2||/Android 4|iPhone OS 1[0-2]_/.test(navigator.userAgent);
   const spacing=lowEnd?Math.round(1.6*SPACING):SPACING;   // low-end 1.6x spacing rule
-  let W=0,H=0,dpr=1,running=false,visible=true,lastT=0,accRgb='212,253,115';
+  let W=0,H=0,dpr=1,running=false,visible=true,lastT=0,accRgb='212,253,115',bg=null,dots=null;
   // cursor + idle float state — lerp/inertia constants
   const cur={x:0,y:0,tx:0,ty:0};
   let hasMouse=false,idleUntil=0,startT=performance.now();
@@ -655,6 +782,23 @@ function palFilter(q){
     W=r.width;H=r.height;
     cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
+    // static lattice rasterized once per resize into an offscreen canvas; dots cached as x/y pairs
+    const cols=Math.ceil(W/spacing)+1, rows=Math.ceil(H/spacing)+1;
+    const ox=(W-(cols-1)*spacing)/2, oy=(H-(rows-1)*spacing)/2;
+    bg=document.createElement('canvas');
+    bg.width=cv.width;bg.height=cv.height;
+    const bx=bg.getContext('2d');
+    bx.setTransform(dpr,0,0,dpr,0,0);
+    bx.fillStyle='rgba(255,255,255,0.11)';
+    bx.beginPath();
+    dots=new Float32Array(rows*cols*2);
+    let k=0;
+    for(let gy=0;gy<rows;gy++)for(let gx=0;gx<cols;gx++){
+      const x=ox+gx*spacing,y=oy+gy*spacing;
+      bx.rect(x-.6,y-.6,1.2,1.2);                          // crisp 1.2px rects @ alpha .11
+      dots[k++]=x;dots[k++]=y;
+    }
+    bx.fill();
     // seed the idle float point at 62%/42% of the hero
     if(!cur.x){cur.x=cur.tx=.62*W;cur.y=cur.ty=.42*H}
   }
@@ -668,32 +812,24 @@ function palFilter(q){
     cur.x+=(cur.tx-cur.x)*.1;                             // frame lerp 0.1
     cur.y+=(cur.ty-cur.y)*.1;
     ctx.clearRect(0,0,W,H);
-    // uniform centered lattice
-    const cols=Math.ceil(W/spacing)+1, rows=Math.ceil(H/spacing)+1;
-    const ox=(W-(cols-1)*spacing)/2, oy=(H-(rows-1)*spacing)/2;
-
-    const lit=[];                                          // lit dots batched: one path for the grey base
-    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-      const x=ox+c*spacing,y=oy+r*spacing;
+    if(bg)ctx.drawImage(bg,0,0,W,H);                      // static lattice, blitted not rebuilt
+    // erase a circular clearing at the cursor, then paint the lit/repelled dots over it
+    ctx.save();
+    ctx.globalCompositeOperation='destination-out';
+    ctx.fillStyle='#000';
+    ctx.beginPath();ctx.arc(cur.x,cur.y,RADIUS,0,6.2832);ctx.fill();
+    ctx.restore();
+    if(dots)for(let i=0;i<dots.length;i+=2){
+      const x=dots[i],y=dots[i+1];
       const dx=x-cur.x,dy=y-cur.y;
-      if(dx>RADIUS||dx<-RADIUS||dy>RADIUS||dy<-RADIUS){
-        // base lattice = crisp 1.2px rects @ alpha .11
-        ctx.rect(x-.6,y-.6,1.2,1.2);
-        continue;
-      }
+      if(dx>RADIUS||dx<-RADIUS||dy>RADIUS||dy<-RADIUS)continue;
       const d=Math.hypot(dx,dy);
-      if(d<RADIUS){
-        const e=(1-d/RADIUS)**2;
-        // push away from the cursor by 14*e along the vector
-        const push=d>0?14*e/d:0;
-        lit.push([x+dx*push,y+dy*push,e]);
-      }
-    }
-    ctx.fillStyle='rgba(255,255,255,0.11)';ctx.fill();
-    for(const[lx,ly,e]of lit){
+      if(d>=RADIUS)continue;
+      const e=(1-d/RADIUS)**2;
+      const push=d>0?14*e/d:0;                            // push 14*e away from the cursor
       ctx.beginPath();
       ctx.fillStyle='rgba('+accRgb+','+(.12+.8*e).toFixed(3)+')';
-      ctx.arc(lx,ly,.7+1.9*e,0,6.2832);                   // radius .7 + 1.9*e, alpha .12 + .8*e
+      ctx.arc(x+dx*push,y+dy*push,.7+1.9*e,0,6.2832);     // radius .7 + 1.9*e, alpha .12 + .8*e
       ctx.fill();
     }
   }
