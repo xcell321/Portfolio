@@ -168,3 +168,126 @@ function toggle_like(?PDO $pdo, string $action = 'toggle'): array {
     return $liked ? toggle_like($pdo, 'unlike') : toggle_like($pdo, 'like');
   } catch (Exception $ex) { return ['total' => 0, 'liked' => false]; }
 }
+
+// ---------------------------------------------------------------------------
+// Emoji reaction bar + presence. Replaces the reference build's PartyKit socket
+// with MySQL polling: reactions are broadcast through reaction_events, presence
+// through the last_seen column. Emoji artwork is Twemoji (the same files the
+// reference loads from jsDelivr), served locally from assets/img/emoji/.
+// ---------------------------------------------------------------------------
+
+/** The reaction palette. Emoji must stay byte-identical to what api_react.php accepts. */
+function reaction_set(): array {
+  return [
+    ['emoji' => '👏', 'label' => 'Clap', 'file' => '1f44f'],
+    ['emoji' => '🔥', 'label' => 'Fire', 'file' => '1f525'],
+    ['emoji' => '🤍', 'label' => 'Love', 'file' => '1f90d'],
+  ];
+}
+
+/** Emoji shown on the bar's toggle button. */
+function reaction_toggle_emoji(): array {
+  return ['emoji' => '🎉', 'label' => 'React', 'file' => '1f389'];
+}
+
+function react_allowed(string $emoji): bool {
+  foreach (reaction_set() as $r) { if ($r['emoji'] === $emoji) return true; }
+  return false;
+}
+
+/** Session id is client-generated; keep it URL/paste-safe before it reaches SQL. */
+function clean_session_id(string $s): string {
+  $s = preg_replace('/[^A-Za-z0-9_-]/', '', $s);
+  return substr((string)$s, 0, 64);
+}
+
+function ensure_reaction_tables(?PDO $pdo): void {
+  if (!$pdo) return;
+  // emoji columns are utf8mb4_bin: the default ci collation treats distinct emoji as equal
+  $pdo->exec("CREATE TABLE IF NOT EXISTS reactions (
+    emoji VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin PRIMARY KEY,
+    total INT NOT NULL DEFAULT 0
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+  $pdo->exec("CREATE TABLE IF NOT EXISTS reaction_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    emoji VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+    session_id VARCHAR(64) NOT NULL DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+  $pdo->exec("CREATE TABLE IF NOT EXISTS presence (
+    session_id VARCHAR(64) PRIMARY KEY,
+    last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+  $ins = $pdo->prepare("INSERT IGNORE INTO reactions (emoji,total) VALUES (?,0)");
+  foreach (reaction_set() as $r) { $ins->execute([$r['emoji']]); }
+}
+
+function touch_presence(?PDO $pdo, string $session): void {
+  if (!$pdo || $session === '') return;
+  try {
+    $pdo->prepare("INSERT INTO presence (session_id,last_seen) VALUES (?,NOW())
+                   ON DUPLICATE KEY UPDATE last_seen=NOW()")->execute([$session]);
+  } catch (Exception $ex) {}
+}
+
+/** Visitors seen in the last 20 seconds (includes the current one). */
+function presence_count(?PDO $pdo): int {
+  if (!$pdo) return 1;
+  try {
+    ensure_reaction_tables($pdo);
+    return max(1, (int)$pdo->query("SELECT COUNT(*) FROM presence WHERE last_seen >= NOW() - INTERVAL 20 SECOND")->fetchColumn());
+  } catch (Exception $ex) { return 1; }
+}
+
+function react_counts(?PDO $pdo): array {
+  if (!$pdo) return [];
+  try {
+    $out = [];
+    foreach ($pdo->query("SELECT emoji,total FROM reactions") as $r) { $out[$r['emoji']] = (int)$r['total']; }
+    return $out;
+  } catch (Exception $ex) { return []; }
+}
+
+/** Record one reaction. Returns the new event id so the sender can skip its own echo. */
+function react_send(?PDO $pdo, string $emoji, string $session): array {
+  if (!$pdo || !react_allowed($emoji)) return ['ok' => false];
+  try {
+    ensure_reaction_tables($pdo);
+    $pdo->prepare("INSERT INTO reactions (emoji,total) VALUES (?,1)
+                   ON DUPLICATE KEY UPDATE total=total+1")->execute([$emoji]);
+    $pdo->prepare("INSERT INTO reaction_events (emoji,session_id) VALUES (?,?)")->execute([$emoji, $session]);
+    $id = (int)$pdo->lastInsertId(); // read before touch_presence, whose upsert resets it
+    touch_presence($pdo, $session);
+    return ['ok' => true, 'id' => $id];
+  } catch (Exception $ex) { return ['ok' => false]; }
+}
+
+/** Poll: refresh presence, hand back new events, the cursor and the totals. */
+function react_poll(?PDO $pdo, int $since, string $session): array {
+  if (!$pdo) return ['ok' => false, 'events' => [], 'last' => $since, 'present' => 1, 'counts' => []];
+  try {
+    ensure_reaction_tables($pdo);
+    touch_presence($pdo, $session);
+    // prune rows from closed tabs occasionally instead of every poll
+    if (random_int(1, 20) === 1) {
+      $pdo->exec("DELETE FROM presence WHERE last_seen < NOW() - INTERVAL 2 MINUTE");
+    }
+    $last = (int)$pdo->query("SELECT COALESCE(MAX(id),0) FROM reaction_events")->fetchColumn();
+    // $since = 0 means "first poll" — sync the cursor without replaying history
+    $events = [];
+    if ($since > 0 && $last > $since) {
+      $st = $pdo->prepare("SELECT id,emoji,session_id FROM reaction_events WHERE id > ? ORDER BY id ASC LIMIT 40");
+      $st->execute([$since]);
+      $events = $st->fetchAll();
+    }
+    return [
+      'ok' => true,
+      'events' => $events,
+      'last' => $last,
+      'present' => max(1, (int)$pdo->query("SELECT COUNT(*) FROM presence WHERE last_seen >= NOW() - INTERVAL 20 SECOND")->fetchColumn()),
+      'counts' => react_counts($pdo),
+    ];
+  } catch (Exception $ex) {
+    return ['ok' => false, 'events' => [], 'last' => $since, 'present' => 1, 'counts' => []];
+  }
+}
