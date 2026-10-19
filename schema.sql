@@ -73,6 +73,29 @@ CREATE TABLE IF NOT EXISTS site_like_voters (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Emoji reaction bar. NB: the emoji column must use the binary collation —
+-- utf8mb4_unicode_ci treats U+1F44F/U+1F525/U+1F90D as equal (unassigned in its
+-- tables), which makes the PRIMARY KEY collide and silently drops rows.
+CREATE TABLE IF NOT EXISTS reactions (
+  emoji VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin PRIMARY KEY,
+  total INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT IGNORE INTO reactions (emoji,total) VALUES ('👏',0),('🔥',0),('🤍',0);
+
+-- live feed of reactions so other visitors can see the floating emoji
+CREATE TABLE IF NOT EXISTS reaction_events (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  emoji VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  session_id VARCHAR(64) NOT NULL DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- presence: one row per open tab, refreshed on each poll
+CREATE TABLE IF NOT EXISTS presence (
+  session_id VARCHAR(64) PRIMARY KEY,
+  last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- default admin: username admin / password admin123 (CHANGE THIS NOW!)
 -- password_hash generated via: password_hash('admin123', PASSWORD_DEFAULT)
 INSERT IGNORE INTO admin_users (username,password_hash) VALUES

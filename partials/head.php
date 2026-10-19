@@ -9,10 +9,10 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/bricolage-grotesque-latin.woff2">
 <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/inter-latin.woff2">
 <link rel="stylesheet" href="assets/css/fonts.css?v=20261018a">
-<link rel="stylesheet" href="assets/css/style.css?v=20261019v">
+<link rel="stylesheet" href="assets/css/style.css?v=20261019x">
 <script>try{var _a=(localStorage.getItem('acc')||'#d4fd73').toLowerCase();var _ok=['#d4fd73','#6ee7b7','#7dd3fc','#c4b5fd','#f9a8d4','#cf8a4b','#3b6fe0'].indexOf(_a)>-1;document.documentElement.style.setProperty('--acc',_ok?_a:'#d4fd73');if(!_ok){try{localStorage.setItem('acc','#d4fd73')}catch(_e){}}}catch(e){}</script>
 </head>
-<body>
+<body data-hero-active>
 <header class="site-header"><div class="header-pt">
 <nav class="nav-in" aria-label="Primary">
   <a class="logo" href="#top" aria-label="<?=e(token('owner_name'))?> — back to top"><img src="assets/img/logo.svg" alt="" class="logo-img"><span class="logo-txt"><?=e(token('owner_name'))?></span></a>

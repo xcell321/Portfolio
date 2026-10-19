@@ -187,7 +187,7 @@ footer{border-top:1px solid var(--line);padding:40px 0;background:var(--bg2)}
 #palList::-webkit-scrollbar{width:8px}
 #palList::-webkit-scrollbar-track{background:transparent}
 #palList::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px}
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--acc);color:#111;font-weight:700;padding:11px 20px;border-radius:999px;opacity:0;transition:.3s;z-index:99}
+#toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--acc);color:#111;font-weight:700;padding:11px 20px;border-radius:999px;opacity:0;transition:.3s;z-index:99}
 #toast.show{opacity:1;transform:translateX(-50%)}
 .toast-act{margin-left:10px;background:#111;color:var(--acc);border:0;border-radius:999px;padding:5px 14px;font-weight:700;cursor:pointer}
 .toast-act:hover{transform:scale(1.05)}
@@ -718,4 +718,63 @@ a.pill:hover{text-decoration:none}
 @media(prefers-reduced-motion:reduce){
   .sk-body{transition:none}
   .kit-chips.tidy .tool{transition:none}
+}
+/* ===== emoji reaction bar + presence badge =====
+   Values mirror the reference build's framer-motion variants:
+   floats     initial {opacity:1,y:0,scale:.5,x,rotate} → {opacity:0,y:-130,scale:1.4,x±40,rotate×2}, 1.8s [.16,1,.3,1]
+   panel      {opacity:0,y:12,scale:.9} → {1,0,1}, .25s [.22,1,.36,1]
+   buttons    {opacity:0,y:10,scale:.7} → {1,0,1}, .25s [.22,1,.36,1], delay .04*i, hover {1.25,-4} tap {.9}
+   ring       {scale:.8,opacity:.8} → {scale:1.8,opacity:0}, .5s
+   chevron    rotate 180deg, .2s */
+/* hero gate: while the hero fills the viewport the reference build hides both
+   (main.js sets body[data-hero-active] from an IntersectionObserver on #top) */
+.react-bar,.presence-badge{transition:opacity .5s ease,transform .5s ease}
+body[data-hero-active] .react-bar,body[data-hero-active] .presence-badge{opacity:0;pointer-events:none}
+/* .react-stack re-enables hit-testing, so an invisible bar would still be clickable */
+body[data-hero-active] .react-stack{pointer-events:none}
+@media(max-width:767px){body[data-chat-open] .react-bar{display:none}}
+.react-bar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9998;display:flex;flex-direction:column;align-items:center;pointer-events:none;-webkit-user-select:none;user-select:none}
+@media(min-width:768px){.react-bar{bottom:32px}}
+.react-floats{position:relative;width:14rem;height:10rem;margin-bottom:4px;pointer-events:none}
+.react-float{position:absolute;bottom:0;left:50%;width:32px;height:32px;margin-left:-16px;pointer-events:none;animation:react-float 1.8s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes react-float{
+  0%{opacity:1;transform:translateX(var(--x,0px)) translateY(0) scale(.5) rotate(var(--r,0deg))}
+  100%{opacity:0;transform:translateX(var(--x2,0px)) translateY(-130px) scale(1.4) rotate(var(--r2,0deg))}
+}
+.react-stack{display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto}
+.react-panel{display:none;align-items:flex-end;gap:8px;padding:12px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(135deg,rgba(20,20,20,.85) 0%,rgba(10,10,10,.9) 100%);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)}
+.react-panel.open{display:flex;animation:react-panel-in .25s cubic-bezier(.22,1,.36,1) backwards}
+.react-panel.closing{display:flex;animation:react-panel-out .2s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes react-panel-in{from{opacity:0;transform:translateY(12px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes react-panel-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(12px) scale(.9)}}
+.react-btn{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;border-radius:12px;background:none;padding:0;cursor:pointer;color:inherit;transition:transform .25s cubic-bezier(.22,1,.36,1)}
+.react-panel.open .react-btn{animation:react-btn-in .25s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*.04s)}
+.react-panel.open .react-btn:hover{transform:scale(1.25) translateY(-4px)}
+.react-panel.open .react-btn:active{transform:scale(.9)}
+@keyframes react-btn-in{from{opacity:0;transform:translateY(10px) scale(.7)}to{opacity:1;transform:none}}
+.react-btn-box{display:flex;width:44px;height:44px;align-items:center;justify-content:center;border-radius:12px;transition:background-color .15s}
+.react-btn:hover .react-btn-box{background:rgba(255,255,255,.1)}
+.react-btn-box.on{background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.react-btn-box img{width:28px;height:28px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.react-btn-label{font-size:9px;font-weight:500;color:rgba(255,255,255,.3);transition:color .15s}
+.react-btn:hover .react-btn-label{color:rgba(255,255,255,.6)}
+.react-ring{position:absolute;inset:0;border-radius:9999px;background:color-mix(in srgb,var(--acc) 40%,transparent);animation:react-ring .5s ease-out forwards;pointer-events:none}
+@keyframes react-ring{from{transform:scale(.8);opacity:.8}to{transform:scale(1.8);opacity:0}}
+.react-toggle{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:9999px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(135deg,rgba(20,20,20,.85) 0%,rgba(10,10,10,.9) 100%);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-size:12px;font-weight:500;cursor:pointer;transition:color .2s,transform .2s}
+.react-toggle:hover{color:rgba(255,255,255,.9);transform:scale(1.04)}
+.react-toggle:active{transform:scale(.94)}
+.react-toggle img{width:16px;height:16px}
+.react-toggle-txt{letter-spacing:.025em}
+.react-chev{display:inline-flex;color:rgba(255,255,255,.3);transition:transform .2s}
+.react-chev svg{width:14px;height:14px;display:block}
+.react-bar.open .react-chev{transform:rotate(180deg)}
+.presence-badge{position:fixed;bottom:32px;left:32px;z-index:9998;display:none;align-items:center;gap:8px;border-radius:9999px;border:1px solid rgba(255,255,255,.08);background:rgba(22,22,22,.8);padding:6px 12px;font-size:12px;color:#a8a29e;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+@media(min-width:768px){.presence-badge{display:inline-flex}}
+.presence-dot{width:6px;height:6px;flex:none;border-radius:50%;background:var(--acc)}
+@media(prefers-reduced-motion:reduce){
+  .react-float{display:none}
+  .react-panel.open .react-btn{animation:none}
+  .react-ring{display:none}
+  .react-toggle{transition:none}
+  .react-chev{transition:none}
 }

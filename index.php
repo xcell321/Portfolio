@@ -38,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gbook'])) {
 $guest_rows = get_guestbook($pdo);
 $like_total = get_likes($pdo);
 $liked_now  = has_liked($pdo); // 1 per person — sets liked state on first render
+$present_now = presence_count($pdo); // visitors in the last 20s — seeds the presence badge
 
 // --- view ---
 require __DIR__ . '/partials/head.php';
@@ -48,4 +49,5 @@ require __DIR__ . '/partials/journey.php';
 require __DIR__ . '/partials/creds.php';
 require __DIR__ . '/partials/guestbook.php';
 require __DIR__ . '/partials/contact.php';
+require __DIR__ . '/partials/reactions.php';
 require __DIR__ . '/partials/footer.php';

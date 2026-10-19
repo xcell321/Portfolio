@@ -1251,3 +1251,126 @@ function popSticker(ev){
   addEventListener('open-ai-chat',openChat);
   syncFab();
 })();
+// ---- emoji reaction bar + presence badge:
+// same behaviour as the reference build, but its PartyKit socket is replaced by
+// polling api_react.php — own reactions are spawned locally, other visitors'
+// come back as events, and the badge counts sessions seen in the last 20s.
+(function(){
+  const bar=document.getElementById('reactBar');
+  const panel=document.getElementById('reactPanel');
+  const toggle=document.getElementById('reactToggle');
+  const toggleTxt=document.getElementById('reactToggleTxt');
+  const floats=document.getElementById('reactFloats');
+  const badge=document.getElementById('presenceTxt');
+  if(!bar||!panel||!toggle||!floats)return;
+  const API='api_react.php';
+  const POLL=2000;
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let session='';
+  try{
+    session=sessionStorage.getItem('pf-react-session')||'';
+    if(!session){
+      session=window.crypto&&crypto.randomUUID?crypto.randomUUID():('s'+Date.now()+Math.random().toString(36).slice(2));
+      sessionStorage.setItem('pf-react-session',session);
+    }
+  }catch(e){session='s'+Date.now()+Math.random().toString(36).slice(2)}
+  session=session.replace(/[^A-Za-z0-9_-]/g,'').slice(0,64);
+
+  // hero gate: hidden while the hero fills the viewport, same rootMargin as the reference
+  const hero=document.getElementById('top');
+  if(hero&&'IntersectionObserver' in window){
+    new IntersectionObserver(function(es){
+      if(es[0].isIntersecting)document.body.setAttribute('data-hero-active','');
+      else document.body.removeAttribute('data-hero-active');
+    },{rootMargin:'0px 0px -30% 0px'}).observe(hero);
+  }else{
+    document.body.removeAttribute('data-hero-active');
+  }
+
+  function srcFor(emoji){
+    const b=panel.querySelector('.react-btn[data-emoji="'+emoji+'"]');
+    const im=b&&b.querySelector('img');
+    return im?im.getAttribute('src'):'';
+  }
+  // float: initial {y:0,scale:.5,x,rotate} → {y:-130,scale:1.4,x±40,rotate×2} over 1.8s
+  function spawn(emoji,id){
+    if(reduced)return;
+    const src=srcFor(emoji);if(!src)return;
+    const x=(Math.random()-.5)*140, r=(Math.random()-.5)*40;
+    const el=document.createElement('img');
+    el.className='react-float';el.src=src;el.alt=emoji;
+    el.width=32;el.height=32;el.draggable=false;el.dataset.id=id;
+    el.style.setProperty('--x',x.toFixed(1)+'px');
+    el.style.setProperty('--x2',(x+(Math.random()-.5)*40).toFixed(1)+'px');
+    el.style.setProperty('--r',r.toFixed(1)+'deg');
+    el.style.setProperty('--r2',(2*r).toFixed(1)+'deg');
+    floats.appendChild(el);
+    setTimeout(function(){el.remove()},2000);
+  }
+  function ring(btn){
+    const s=document.createElement('span');
+    s.className='react-ring';
+    btn.appendChild(s);
+    setTimeout(function(){s.remove()},500);
+  }
+  function send(emoji){
+    const id=Date.now()+'-'+Math.random().toString(36).slice(2);
+    spawn(emoji,id);
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'react',emoji:emoji,session:session})})
+      .then(function(r){return r.json()}).catch(function(){});
+  }
+
+  let since=0,polling=false,timer=0;
+  function poll(){
+    if(polling)return;
+    polling=true;
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'poll',since:since,session:session})})
+      .then(function(r){return r.json()})
+      .then(function(j){
+        polling=false;
+        if(!j||j.ok===false)return;
+        if(badge&&typeof j.present==='number')badge.textContent=j.present<=1?'Just you here':j.present+' people here';
+        // replay other visitors' reactions; our own are already on screen locally
+        if(j.events)j.events.forEach(function(ev){if(ev.session_id!==session)spawn(ev.emoji,ev.id)});
+        if(typeof j.last==='number'&&j.last>since)since=j.last;
+      })
+      .catch(function(){polling=false});
+  }
+
+  function openPanel(){
+    panel.classList.remove('closing');
+    panel.classList.add('open');
+    bar.classList.add('open');
+    toggle.setAttribute('aria-expanded','true');
+    toggle.setAttribute('aria-label','Close reactions');
+    if(toggleTxt)toggleTxt.textContent='Close';
+  }
+  function closePanel(){
+    if(!panel.classList.contains('open'))return;
+    bar.classList.remove('open');
+    toggle.setAttribute('aria-expanded','false');
+    toggle.setAttribute('aria-label','Send a reaction');
+    if(toggleTxt)toggleTxt.textContent='React';
+    panel.classList.remove('open');
+    if(reduced)return;
+    panel.classList.add('closing');
+    setTimeout(function(){panel.classList.remove('closing')},200);
+  }
+  toggle.addEventListener('click',function(){panel.classList.contains('open')?closePanel():openPanel()});
+  panel.querySelectorAll('.react-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      ring(btn);
+      const box=btn.querySelector('.react-btn-box');
+      if(box){box.classList.add('on');setTimeout(function(){box.classList.remove('on')},300)}
+      send(btn.getAttribute('data-emoji')||'');
+    });
+  });
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&panel.classList.contains('open'))closePanel()});
+
+  poll();
+  timer=setInterval(poll,POLL);
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden){clearInterval(timer);timer=0}
+    else{poll();if(!timer)timer=setInterval(poll,POLL)}
+  });
+})();
