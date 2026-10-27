@@ -13,6 +13,7 @@
       </div>
     </div>
     <form method="POST">
+      <?=csrf_field()?>
       <div class="row2"><div><label><?=e(token('contact.f_name'))?></label><input name="name" required></div><div><label><?=e(token('contact.f_email'))?></label><input name="email" type="email" required></div></div>
       <label><?=e(token('contact.f_company'))?></label><input name="company">
       <label><?=e(token('contact.f_need'))?></label>

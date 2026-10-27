@@ -5,6 +5,8 @@ require __DIR__ . '/lib/icons.php';
 require __DIR__ . '/lib/database.php';
 require __DIR__ . '/lib/content.php';
 
+csrf_start();
+
 $pdo      = db_connect();
 $projects = get_projects($pdo);
 $timeline = get_timeline($pdo);
@@ -13,24 +15,37 @@ $certs    = get_certs($pdo);
 // --- form actions ---
 $msg_ok = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact'])) {
-  $data = [
-    'name'    => trim($_POST['name'] ?? ''),
-    'email'   => trim($_POST['email'] ?? ''),
-    'company' => trim($_POST['company'] ?? ''),
-    'need'    => trim($_POST['need'] ?? ''),
-    'budget'  => trim($_POST['budget'] ?? ''),
-    'message' => trim($_POST['message'] ?? ''),
-  ];
-  if ($data['name'] && $data['email'] && $data['message']) {
-    save_message($pdo, $data);
-    $msg_ok = sprintf(token('contact.ok'), $data['name']);
-  } else {
+  if (!csrf_ok()) {
+    http_response_code(403);
     $msg_ok = token('contact.err');
+  } elseif (($_SESSION['last_contact'] ?? 0) > time() - 30) {
+    http_response_code(429);
+    $msg_ok = token('contact.err');
+  } else {
+    $data = [
+      'name'    => mb_substr(trim($_POST['name'] ?? ''), 0, 100),
+      'email'   => mb_substr(trim($_POST['email'] ?? ''), 0, 150),
+      'company' => mb_substr(trim($_POST['company'] ?? ''), 0, 150),
+      'need'    => mb_substr(trim($_POST['need'] ?? ''), 0, 255),
+      'budget'  => mb_substr(trim($_POST['budget'] ?? ''), 0, 50),
+      'message' => mb_substr(trim($_POST['message'] ?? ''), 0, 5000),
+    ];
+    if ($data['name'] && $data['message'] && filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+      save_message($pdo, $data);
+      $_SESSION['last_contact'] = time();
+      $msg_ok = sprintf(token('contact.ok'), $data['name']);
+    } else {
+      $msg_ok = token('contact.err');
+    }
   }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gbook'])) {
-  save_guestbook($pdo, trim($_POST['gname'] ?? ''), trim($_POST['gmsg'] ?? ''));
+  if (!csrf_ok()) { http_response_code(403); exit('Forbidden'); }
+  if (($_SESSION['last_gbook'] ?? 0) > time() - 30) { http_response_code(429); exit('Too many requests'); }
+  $gname = mb_substr(trim($_POST['gname'] ?? ''), 0, 100);
+  $gmsg  = mb_substr(trim($_POST['gmsg'] ?? ''), 0, 2000);
+  if (save_guestbook($pdo, $gname, $gmsg)) $_SESSION['last_gbook'] = time();
   header('Location: #guestbook');
   exit;
 }

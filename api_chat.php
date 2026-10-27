@@ -4,6 +4,26 @@
 require __DIR__ . '/lib/env.php';
 require __DIR__ . '/lib/helpers.php';
 
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+if ($method !== 'POST') {
+  http_response_code(405);
+  header('Content-Type: application/json');
+  echo json_encode(['error' => 'Method not allowed']);
+  exit;
+}
+if (!same_origin_post()) {
+  http_response_code(403);
+  header('Content-Type: application/json');
+  echo json_encode(['error' => 'Forbidden']);
+  exit;
+}
+if (!rate_limit('ai_chat', 30, 600) || !rate_limit('ai_chat_burst', 3, 10)) {
+  http_response_code(429);
+  header('Content-Type: application/json');
+  echo json_encode(['error' => 'Too many requests. Please wait a moment and try again.']);
+  exit;
+}
+
 header('Content-Type: text/event-stream; charset=utf-8');
 header('Cache-Control: no-cache, no-transform');
 header('X-Accel-Buffering: no');
@@ -73,8 +93,12 @@ function ai_model(string $key): string {
   }
 
   $best = '';
-  $ch = curl_init($base . '/models?pageSize=200&key=' . urlencode($key));
-  curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
+  $ch = curl_init($base . '/models?pageSize=200');
+  curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_TIMEOUT => 10,
+    CURLOPT_HTTPHEADER => ['x-goog-api-key: ' . $key],
+  ]);
   $res  = curl_exec($ch);
   $code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
   curl_close($ch);
@@ -133,7 +157,7 @@ if ($contents[0]['role'] !== 'user') {
 
 $base  = rtrim((string)env_get('GEMINI_API_BASE', 'https://generativelanguage.googleapis.com/v1beta'), '/');
 $model = ai_model($key);
-$url   = $base . '/models/' . $model . ':streamGenerateContent?alt=sse&key=' . urlencode($key);
+$url   = $base . '/models/' . $model . ':streamGenerateContent?alt=sse';
 $body  = json_encode([
   'systemInstruction' => ['parts' => [['text' => ai_system_prompt()]]],
   'contents'          => $contents,
@@ -144,7 +168,7 @@ $buf = ''; $sawText = false; $errored = false;
 $ch = curl_init($url);
 curl_setopt_array($ch, [
   CURLOPT_POST           => true,
-  CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+  CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'x-goog-api-key: ' . $key],
   CURLOPT_POSTFIELDS     => $body,
   CURLOPT_TIMEOUT        => 90,
   CURLOPT_CONNECTTIMEOUT => 15,

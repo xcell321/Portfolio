@@ -34,6 +34,8 @@ function icon(string $name, int $size = 18): string {
     'search' => '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
     'corner' => '<polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>',
     'palette' => '<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1"/><circle cx="14" cy="9" r="1"/><circle cx="15" cy="14" r="1"/><path d="M12 21c-1 0-1-1-1-2h3c0 1 0 2-2 2z"/>',
+    'layers' => '<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+    'smartphone' => '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
     'mobile' => '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18.5h2"/>',
     'send' => '<path d="M21 3L10 14M21 3l-7 18-3-8-8-3z"/>',
     'moon' => '<path d="M20 14.5A8 8 0 019.5 4 8 8 0 0020 14.5z"/>',

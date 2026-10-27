@@ -192,14 +192,39 @@ function toggleNav(){
   });
 })();
 // feature cards: spotlight glow follows the cursor
-document.querySelectorAll('.spot').forEach(c=>{
-  c.addEventListener('pointermove',e=>{
-    const r=c.getBoundingClientRect();
-    c.style.setProperty('--mx',(e.clientX-r.left)+'px');
-    c.style.setProperty('--my',(e.clientY-r.top)+'px');
+(function(){
+  const tilt=4,k=180,c=20,reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.spot').forEach(el=>{
+    let rx=0,ry=0,tx=0,ty=0,vx=0,vy=0,raf=0,last=0;
+    function frame(now){
+      if(!last)last=now;
+      const dt=Math.min((now-last)/1000,.033);last=now;
+      vx+=(-k*(rx-tx)-c*vx)*dt;rx+=vx*dt;
+      vy+=(-k*(ry-ty)-c*vy)*dt;ry+=vy*dt;
+      el.style.transform='perspective(1000px) rotateX('+rx.toFixed(3)+'deg) rotateY('+ry.toFixed(3)+'deg)';
+      if(Math.abs(vx)>.01||Math.abs(rx-tx)>.01||Math.abs(vy)>.01||Math.abs(ry-ty)>.01){raf=requestAnimationFrame(frame);return}
+      rx=tx;ry=ty;vx=vy=0;last=0;raf=0;
+      el.style.transform='perspective(1000px) rotateX('+rx+'deg) rotateY('+ry+'deg)';
+    }
+    function start(){if(!raf){last=0;raf=requestAnimationFrame(frame)}}
+    el.addEventListener('pointermove',e=>{
+      const r=el.getBoundingClientRect();
+      const x=e.clientX-r.left,y=e.clientY-r.top;
+      el.style.setProperty('--mx',x+'px');
+      el.style.setProperty('--my',y+'px');
+      if(reduce||e.pointerType!=='mouse')return;
+      tx=-(y/r.height-.5)*tilt*2;
+      ty=(x/r.width-.5)*tilt*2;
+      start();
+    });
+    el.addEventListener('pointerleave',()=>{
+      el.style.setProperty('--mx','-1000px');
+      el.style.setProperty('--my','-1000px');
+      if(reduce)return;
+      tx=0;ty=0;start();
+    });
   });
-  c.addEventListener('pointerleave',()=>{c.style.removeProperty('--mx');c.style.removeProperty('--my')});
-});
+})();
 // chips select
 document.querySelectorAll('[data-chips]').forEach(box=>{
   box.addEventListener('click',e=>{
@@ -215,31 +240,68 @@ function tidyUp(){
   const box=document.getElementById('toolkit');if(!box)return;
   const ul=box.querySelector('.kit-chips')||box;
   ul.classList.add('tidy');
-  [...ul.children].forEach(n=>{n.style.transform='';n.classList.remove('dragging')});
+  [...ul.children].forEach(n=>{
+    if(n._kitRaf){cancelAnimationFrame(n._kitRaf);n._kitRaf=0}
+    n.classList.remove('dragging');
+    n.style.setProperty('--tx','0px');
+    n.style.setProperty('--ty','0px');
+  });
   const btn=document.querySelector('.kit-tidy');if(btn)btn.hidden=true;
   setTimeout(()=>ul.classList.remove('tidy'),420);
   toast('Tidy!');
 }
 (function(){
   const box=document.getElementById('toolkit');if(!box)return;
+  const ul=box.querySelector('.kit-chips')||box;
   const btn=document.querySelector('.kit-tidy');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   box.querySelectorAll('.tool').forEach(chip=>{
-    let sx=0,sy=0,ox=0,oy=0,active=false,moved=false;
+    let sx=0,sy=0,ox=0,oy=0,active=false,moved=false,minX=0,maxX=0,minY=0,maxY=0;
+    let tx=0,ty=0,vx=0,vy=0,last=0;
+    function setXY(x,y){tx=x;ty=y;chip.style.setProperty('--tx',x+'px');chip.style.setProperty('--ty',y+'px')}
+    function frame(now){
+      if(!last)last=now;
+      const dt=Math.min((now-last)/1000,.033);last=now;
+      vx+=(-300*(tx-ox)-18*vx)*dt;tx+=vx*dt;
+      vy+=(-300*(ty-oy)-18*vy)*dt;ty+=vy*dt;
+      setXY(tx,ty);
+      if(Math.abs(vx)>.05||Math.abs(tx-ox)>.05||Math.abs(vy)>.05||Math.abs(ty-oy)>.05){chip._kitRaf=requestAnimationFrame(frame);return}
+      tx=ox;ty=oy;vx=vy=0;last=0;chip._kitRaf=0;setXY(tx,ty);
+    }
     chip.addEventListener('pointerdown',e=>{
       if(e.button!==0)return;
+      ul.classList.remove('tidy');
       active=true;moved=false;sx=e.clientX;sy=e.clientY;
-      const m=/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(chip.style.transform||'');
-      ox=m?+m[1]:0;oy=m?+m[2]:0;
+      if(chip._kitRaf){cancelAnimationFrame(chip._kitRaf);chip._kitRaf=0}
+      const r=chip.getBoundingClientRect(),a=box.getBoundingClientRect();
+      minX=a.left-r.left;maxX=a.right-r.right;
+      minY=a.top-r.top;maxY=a.bottom-r.bottom;
+      ox=parseFloat(getComputedStyle(chip).getPropertyValue('--tx'))||0;
+      oy=parseFloat(getComputedStyle(chip).getPropertyValue('--ty'))||0;
+      tx=ox;ty=oy;
       chip.setPointerCapture(e.pointerId);
       chip.classList.add('dragging');
     });
     chip.addEventListener('pointermove',e=>{
       if(!active)return;
       const dx=e.clientX-sx,dy=e.clientY-sy;
-      if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;
-      chip.style.transform='translate('+(ox+dx)+'px,'+(oy+dy)+'px)';
+      if(!moved&&(Math.abs(dx)>3||Math.abs(dy)>3)){moved=true;if(btn)btn.hidden=false}
+      const el=.15;
+      let ax=dx,ay=dy;
+      if(ax<minX)ax=minX+(ax-minX)*el;else if(ax>maxX)ax=maxX+(ax-maxX)*el;
+      if(ay<minY)ay=minY+(ay-minY)*el;else if(ay>maxY)ay=maxY+(ay-maxY)*el;
+      setXY(ox+ax,oy+ay);
     });
-    const end=()=>{if(!active)return;active=false;chip.classList.remove('dragging');if(moved&&btn)btn.hidden=false};
+    const end=()=>{
+      if(!active)return;
+      active=false;
+      chip.classList.remove('dragging');
+      const cx=Math.max(minX,Math.min(maxX,tx-ox));
+      const cy=Math.max(minY,Math.min(maxY,ty-oy));
+      if(reduce){setXY(ox+cx,oy+cy);return}
+      ox+=cx;oy+=cy;last=0;
+      if(!chip._kitRaf)chip._kitRaf=requestAnimationFrame(frame);
+    };
     chip.addEventListener('pointerup',end);
     chip.addEventListener('pointercancel',end);
   });
