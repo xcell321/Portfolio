@@ -77,9 +77,13 @@ function bump_likes(?PDO $pdo): int {
 }
 
 function like_voter_hash(): string {
-  $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-  // with a proxy chain, take the first IP
-  $ip = trim(explode(',', (string)$ip)[0]);
+  $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+  // Only trust X-Forwarded-For when the direct peer is a known proxy.
+  $trusted = ['127.0.0.1', '::1'];
+  if (in_array($ip, $trusted, true) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    // with a proxy chain, take the first IP
+    $ip = trim(explode(',', (string)$_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+  }
   $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200);
   return hash('sha256', $ip . '|' . $ua);
 }

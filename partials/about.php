@@ -75,9 +75,9 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
   </div>
 
   <div class="cards3 about-cards">
-    <div class="card spot rv" data-rvd="0"><span class="spot-glow" aria-hidden="true"></span><span class="spot-ring" aria-hidden="true"></span><div class="spot-in"><div class="card-ic"><?=icon('code',24)?></div><h3><?=e(token('about.card1_title'))?></h3><p><?=e(token('about.card1_desc'))?></p></div></div>
-    <div class="card spot rv" data-rvd="0.06"><span class="spot-glow" aria-hidden="true"></span><span class="spot-ring" aria-hidden="true"></span><div class="spot-in"><div class="card-ic"><?=icon('mobile',24)?></div><h3><?=e(token('about.card2_title'))?></h3><p><?=e(token('about.card2_desc'))?></p></div></div>
-    <div class="card spot rv" data-rvd="0.12"><span class="spot-glow" aria-hidden="true"></span><span class="spot-ring" aria-hidden="true"></span><div class="spot-in"><div class="card-ic"><?=icon('palette',24)?></div><h3><?=e(token('about.card3_title'))?></h3><p><?=e(token('about.card3_desc'))?></p></div></div>
+    <div class="rv" data-rvd="0"><div class="card spot"><span class="spot-glow" aria-hidden="true"></span><span class="spot-ring" aria-hidden="true"></span><div class="spot-in"><div class="card-ic"><?=icon('layers',24)?></div><h3><?=e(token('about.card1_title'))?></h3><p><?=e(token('about.card1_desc'))?></p></div></div></div>
+    <div class="rv" data-rvd="0.06"><div class="card spot"><span class="spot-glow" aria-hidden="true"></span><span class="spot-ring" aria-hidden="true"></span><div class="spot-in"><div class="card-ic"><?=icon('smartphone',24)?></div><h3><?=e(token('about.card2_title'))?></h3><p><?=e(token('about.card2_desc'))?></p></div></div></div>
+    <div class="rv" data-rvd="0.12"><div class="card spot"><span class="spot-glow" aria-hidden="true"></span><span class="spot-ring" aria-hidden="true"></span><div class="spot-in"><div class="card-ic"><?=icon('palette',24)?></div><h3><?=e(token('about.card3_title'))?></h3><p><?=e(token('about.card3_desc'))?></p></div></div></div>
   </div>
 
   <div class="sk rv">
@@ -110,7 +110,7 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
   </div>
 
   <div class="kit-grid">
-    <div class="kit-card rv">
+    <div class="kit-card kit-tools rv">
       <div class="kit-head">
         <div><p class="eyebrow"><?=e(token('about.toolkit_title'))?></p><p class="kit-note"><?=e(token('about.toolkit_note'))?> <span class="dim"><?=e(token('about.toolkit_sub'))?></span></p></div>
         <button class="kit-tidy" type="button" onclick="tidyUp()" hidden><?=icon('rotate',14)?> <?=e(token('about.toolkit_tidy'))?></button>
@@ -119,8 +119,8 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         <ul class="kit-chips">
           <?php
           $slugs = ['PHP'=>'php','MySQL'=>'mysql','JavaScript'=>'javascript','Tailwind'=>'tailwindcss','Laravel'=>'laravel','Flutter'=>'flutter','Firebase'=>'firebase','Git'=>'git','Figma'=>'figma','XAMPP'=>'apache','CSS3'=>'css','HTML5'=>'html5'];
-          foreach (token('toolkit', []) as $t): $slug = $slugs[$t] ?? ''; ?>
-          <li class="tool"><?php if ($slug): ?><img src="https://cdn.simpleicons.org/<?=$slug?>/a8a29e" alt="" width="14" height="14" loading="lazy" onerror="this.remove()"> <?php endif; ?><?=e($t)?></li>
+          foreach (token('toolkit', []) as $ti => $t): $slug = $slugs[$t] ?? ''; ?>
+          <li class="tool" style="--i:<?=$ti?>"><?php if ($slug): ?><img src="https://cdn.simpleicons.org/<?=$slug?>/a8a29e" alt="" width="14" height="14" loading="lazy" onerror="this.remove()"> <?php endif; ?><?=e($t)?></li>
           <?php endforeach; ?>
         </ul>
       </div>

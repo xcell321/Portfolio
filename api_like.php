@@ -1,5 +1,6 @@
 <?php
 // Like API — 1 per person (cookie + IP+UA voter hash). Toggle supported.
+require __DIR__ . '/lib/helpers.php';
 require __DIR__ . '/lib/database.php';
 require __DIR__ . '/lib/icons.php';
 require __DIR__ . '/lib/content.php';
@@ -7,6 +8,12 @@ header('Content-Type: application/json');
 
 $pdo = db_connect();
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+if ($method !== 'GET' && !same_origin_post()) {
+  http_response_code(403);
+  echo json_encode(['ok' => false]);
+  exit;
+}
 
 if ($method === 'GET') {
   $r = toggle_like($pdo, 'status');

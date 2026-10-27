@@ -2,11 +2,18 @@
 // Reaction bar API. Both actions are POSTed as JSON.
 //   {action:'react', emoji, session} -> record one reaction, return its event id
 //   {action:'poll',  since, session} -> refresh presence, return new events + totals
+require __DIR__ . '/lib/helpers.php';
 require __DIR__ . '/lib/database.php';
 require __DIR__ . '/lib/content.php';
 header('Content-Type: application/json');
 
 $pdo = db_connect();
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && !same_origin_post()) {
+  http_response_code(403);
+  echo json_encode(['ok' => false]);
+  exit;
+}
 
 $raw = file_get_contents('php://input');
 $in  = $raw ? (json_decode($raw, true) ?: []) : [];

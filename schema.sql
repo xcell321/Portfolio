@@ -96,10 +96,10 @@ CREATE TABLE IF NOT EXISTS presence (
   last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- default admin: username admin / password admin123 (CHANGE THIS NOW!)
--- password_hash generated via: password_hash('admin123', PASSWORD_DEFAULT)
-INSERT IGNORE INTO admin_users (username,password_hash) VALUES
-('admin','$2y$10$wHk2KcQeYx6l8m3n5p7r9uQvW3x5y7z9a1b3c5d7e9f1g3h5i7j9k1m');
+-- No default admin account (a shipped default password is a known-credential risk).
+-- Create one yourself with a strong, unique password; store only the hash:
+--   php -r "echo password_hash('your-strong-password', PASSWORD_DEFAULT), PHP_EOL;"
+--   INSERT INTO admin_users (username,password_hash) VALUES ('admin','<paste-hash>');
 
 INSERT IGNORE INTO projects (num,role,year,title,`desc`,tags,live_url,emoji,image,image_mobile,sort_order) VALUES
 ('01','Personal · Web App','2026','Remotee','A universal remote control for your home devices, built end to end with PHP, CSS and JavaScript.','PHP,MySQL,CSS,JavaScript','https://remotee.infinityfreeapp.com/','📱','assets/img/work/remotee.png','assets/img/work/remotee-mobile.png',1),
