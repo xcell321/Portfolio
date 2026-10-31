@@ -1436,3 +1436,103 @@ function popSticker(ev){
     else{poll();if(!timer)timer=setInterval(poll,POLL)}
   });
 })();
+// journey scroll-spy + progress rail
+(function(){
+  const wrap=document.getElementById('tlWrap');
+  const list=document.getElementById('tlList');
+  if(!wrap||!list)return;
+  const items=[...list.querySelectorAll('.tl-item')];
+  if(!items.length)return;
+  const fill=document.getElementById('tlFill');
+  const knob=document.getElementById('tlKnob');
+  const now=document.getElementById('journeyNow');
+  const dots=[...document.querySelectorAll('#journeyDots span')];
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let active=-1,ticking=false;
+  function setActive(i){
+    if(i===active)return;
+    active=i;
+    items.forEach((el,n)=>{
+      const on=n===i;
+      el.classList.toggle('on',on);
+      if(on)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');
+    });
+    dots.forEach((d,n)=>d.classList.toggle('on',n===i));
+    if(!now)return;
+    const y=items[i].dataset.year||'';
+    if(now.textContent===y)return;
+    now.textContent=y;
+    if(reduce)return;
+    now.classList.remove('swap');
+    void now.offsetWidth;
+    now.classList.add('swap');
+  }
+  function paint(){
+    ticking=false;
+    const vh=innerHeight||document.documentElement.clientHeight;
+    const line=Math.min(150,vh*.3);
+    let i=0;
+    items.forEach((el,n)=>{if(el.getBoundingClientRect().top<=line)i=n});
+    setActive(i);
+    if(!fill)return;
+    const r=wrap.getBoundingClientRect();
+    const p=Math.max(0,Math.min(1,(line-r.top)/Math.max(r.height,1)));
+    fill.style.transform='scaleY('+p.toFixed(4)+')';
+    if(knob)knob.style.top=(p*100).toFixed(2)+'%';
+  }
+  function onScroll(){if(!ticking){ticking=true;requestAnimationFrame(paint)}}
+  addEventListener('scroll',onScroll,{passive:true});
+  addEventListener('resize',onScroll);
+  paint();
+})();
+// certificate preview modal
+(function(){
+  const modal=document.getElementById('certModal');
+  if(!modal)return;
+  const preview=document.getElementById('certModalPreview');
+  const title=document.getElementById('certModalTitle');
+  const org=document.getElementById('certModalOrg');
+  const date=document.getElementById('certModalDate');
+  const link=document.getElementById('certModalLink');
+  let last=null;
+  function lock(on){
+    document.body.classList.toggle('cert-open',on);
+    try{
+      if(on&&window.lenis&&window.lenis.stop)window.lenis.stop();
+      else if(!on&&window.lenis&&window.lenis.start)window.lenis.start();
+    }catch(e){}
+  }
+  function open(btn){
+    const paper=btn.querySelector('.cert-paper');
+    preview.innerHTML='';
+    if(paper)preview.appendChild(paper.cloneNode(true));
+    title.textContent=btn.dataset.certTitle||'';
+    org.textContent=btn.dataset.certOrg||'';
+    date.textContent=btn.dataset.certDate||'';
+    link.href=btn.dataset.certUrl||'#';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+    lock(true);
+    last=btn;
+    setTimeout(function(){const x=modal.querySelector('.cert-modal-x');if(x)x.focus()},30);
+  }
+  function close(){
+    if(!modal.classList.contains('open'))return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+    lock(false);
+    if(last&&document.contains(last))last.focus();
+    last=null;
+  }
+  document.querySelectorAll('[data-cert-open]').forEach(function(btn){btn.addEventListener('click',function(){open(btn)})});
+  modal.querySelectorAll('[data-cert-close]').forEach(function(el){el.addEventListener('click',close)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});
+  modal.addEventListener('keydown',function(e){
+    if(e.key!=='Tab')return;
+    const f=[...modal.querySelectorAll('button,a[href]')].filter(function(el){return !el.disabled&&el.offsetParent!==null});
+    if(!f.length)return;
+    const first=f[0],lastEl=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();lastEl.focus()}
+    else if(!e.shiftKey&&document.activeElement===lastEl){e.preventDefault();first.focus()}
+  });
+})();
