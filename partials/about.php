@@ -14,6 +14,22 @@ foreach ((array)token('skills', []) as $r) {
   ];
 }
 
+// Hover-card payload: one entry per distinct tech word. The note is authored in tokens,
+// the shots are derived from project tags — nothing about a project is duplicated here.
+$skNotes = (array)token('tech_notes', []);
+$skCardData = [];
+foreach ($skRows as $r) {
+  foreach ($r['words'] as $w) {
+    $note  = (string)($skNotes[$w] ?? '');
+    $shots = tech_usage($w, $projects);
+    if ($note === '' && $shots === []) continue;
+    $skCardData[$w] = [
+      'note'  => $note,
+      'shots' => array_map(static fn(array $s): array => ['t' => $s['title'], 'i' => $s['img'], 'u' => $s['url']], $shots),
+    ];
+  }
+}
+
 // Terminal content is built here so it always matches the tokens and the DB.
 $projLines = [];
 foreach ($projects as $i => $p) {
@@ -96,7 +112,7 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             <div class="sk-words">
               <?php foreach ($words as $wi => $w): ?>
                 <?php if ($wi): ?><span class="sk-sep" aria-hidden="true">/</span><?php endif; ?>
-                <button class="sk-word<?=($r['tip'] !== '' && $w === $r['tip']) ? ' has-tip' : ''?>" type="button" aria-expanded="false"><?=e($w)?><?php if ($r['tip'] !== '' && $w === $r['tip']): ?><span class="sk-tip" aria-hidden="true"><svg viewBox="0 0 24 20" fill="none"><path d="M22 3C14 3 6 7 4 17m0 0-3-4m3 4 4-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><?=e($tip)?></span><?php endif; ?></button>
+                <button class="sk-word<?=($r['tip'] !== '' && $w === $r['tip']) ? ' has-tip' : ''?>" type="button" data-tech="<?=e($w)?>" aria-expanded="false"><?=e($w)?><?php if ($r['tip'] !== '' && $w === $r['tip']): ?><span class="sk-tip" aria-hidden="true"><svg viewBox="0 0 24 20" fill="none"><path d="M22 3C14 3 6 7 4 17m0 0-3-4m3 4 4-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><?=e($tip)?></span><?php endif; ?></button>
               <?php endforeach; ?>
             </div>
           </div>
@@ -104,6 +120,14 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
       </div>
       <?php endforeach; ?>
     </div>
+
+    <div class="sk-card" id="skCard" role="tooltip" aria-hidden="true">
+      <p class="sk-card-title"></p>
+      <p class="sk-card-note"></p>
+      <div class="sk-card-shots"></div>
+      <p class="sk-card-foot"><?=e(token('about.skills_card_foot'))?></p>
+    </div>
+    <script type="application/json" id="skCardData"><?=json_encode($skCardData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP)?></script>
   </div>
 
   <div class="kit-grid">
