@@ -9,8 +9,15 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/bricolage-grotesque-latin.woff2">
 <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/inter-latin.woff2">
 <link rel="stylesheet" href="assets/css/fonts.css?v=20261018a">
-<link rel="stylesheet" href="assets/css/style.css?v=20261028d">
+<link rel="stylesheet" href="assets/css/style.css?v=20261103a">
 <script>try{var _a=(localStorage.getItem('acc')||'#d4fd73').toLowerCase();var _ok=['#d4fd73','#6ee7b7','#7dd3fc','#c4b5fd','#f9a8d4','#cf8a4b','#3b6fe0'].indexOf(_a)>-1;document.documentElement.style.setProperty('--acc',_ok?_a:'#d4fd73');if(!_ok){try{localStorage.setItem('acc','#d4fd73')}catch(_e){}}}catch(e){}</script>
+<script>/* one device-capability read, before first paint so the orb/blur gating costs no frame.
+   lowEnd = skip smooth scroll and heavy decoration; veryLowEnd = additionally thin the dot field. */
+try{var _c=navigator.connection||{},_h=navigator.hardwareConcurrency||0,_m=navigator.deviceMemory||0;
+var _low=_c.saveData===true||(_h&&_h<=4)||(_m&&_m<=4);
+var _vlow=_h<=2||/Android 4|iPhone OS 1[0-2]_/.test(navigator.userAgent);
+window.__perf={lowEnd:!!_low,veryLowEnd:!!_vlow};
+if(_low)document.documentElement.setAttribute('data-low-end','true');}catch(e){window.__perf={lowEnd:false,veryLowEnd:false}}</script>
 </head>
 <body data-hero-active>
 <header class="site-header"><div class="header-pt">
