@@ -117,7 +117,8 @@ return [
   'stats' => [
     ['num' => '04', 'label' => 'Products shipped'],
     ['num' => '5+', 'label' => 'Years Exp'],
-    ['num' => '10+', 'label' => 'Personal Projects'],
+    ['num' => '12+', 'label' => 'Client Projects'],
+    ['num' => '15+', 'label' => 'Personal Projects'],
   ],
   'services' => ['Web applications','Mobile apps','Product design','Design systems','APIs & backends','UI engineering'],
   'skills' => [
