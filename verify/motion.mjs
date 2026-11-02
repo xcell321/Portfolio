@@ -3,11 +3,12 @@
 //   node verify/motion.mjs dump  <url> [--out=file.json] [--reduced]
 //   node verify/motion.mjs diff  a.json b.json
 //   node verify/motion.mjs check [url] [--reduced]
-//   node verify/motion.mjs shot  [url] [--sections=a,b] [--out=dir]
+//   node verify/motion.mjs shot  [url] [--sections=a,b] [--hover=PHP] [--out=dir]
 // `dump` measures by text content and by id, so it can compare our PHP site against any reference build
 // without knowing the other site's class names. `check` asserts our own spec table.
 // `shot` scrolls to each section id in a real 1440x900 viewport and captures it; reveals are forced
 // visible because a tall-window screenshot would stretch the 100vh hero and lie about the layout.
+// `--hover=<tech>` drives a real mouse onto that skill word first, for the hover-only card.
 
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -24,11 +25,16 @@ const urlArg = args.slice(1).find(a => /^https?:/.test(a));
 const outArg = (args.find(a => a.startsWith('--out=')) || '').slice(6);
 
 // ---------- CDP client ----------
-async function connect() {
+async function connect(wantUrl) {
   for (let i = 0; i < 60; i++) {
     try {
       const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json();
-      const page = list.find(t => t.type === 'page');
+      const pages = list.filter(t => t.type === 'page');
+      // Chrome briefly exposes an about:blank target next to the real one. Attaching to it
+      // makes every later assertion evaluate against an empty page and pass vacuously.
+      const page = pages.find(t => t.url === wantUrl)
+        || pages.find(t => /^https?:/.test(t.url))
+        || (pages.length > 1 ? pages.find(t => !/^about:blank/.test(t.url)) : null);
       if (page) {
         const ws = new WebSocket(page.webSocketDebuggerUrl);
         await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
@@ -63,9 +69,11 @@ async function open(url) {
   if (REDUCED) flags.push('--force-prefers-reduced-motion');
   const proc = spawn(CHROME, [...flags, url], { stdio: 'ignore' });
   proc.on('error', () => { throw new Error(`chrome not found at ${CHROME} — set CHROME env`); });
-  const ws = await connect();
+  const ws = await connect(url);
   const { send } = rpc(ws);
   await send('Runtime.enable'); await send('Page.enable'); await send('DOM.enable');
+  const here = await send('Runtime.evaluate', { expression: 'location.href', returnByValue: true });
+  if (!String(here.result?.result?.value || '').startsWith('http')) await send('Page.navigate', { url });
   for (let i = 0; i < 40; i++) {
     const r = await send('Runtime.evaluate', { expression: 'document.readyState', returnByValue: true });
     if (r.result?.result?.value === 'complete') break;
@@ -212,6 +220,89 @@ async function checkSite(url) {
     const urlChip = await ev(`() => { const u = document.querySelector('.work-preview .url-text'); return u ? (u.animate ? 'animatable' : 'no WAAPI') : 'no url-text'; }`);
     check('D3 url chip swaps via WAAPI', urlChip === 'animatable', urlChip);
 
+    // S1-S5 skill-word hover card. Spec measured off the reference: 288px portal on <body>,
+    // radius 16, bg rgba(23,23,23,.95), padding 16, shots 16/10, foot mono 10/.16em,
+    // anchored word-centre +22/+22, and NO entrance animation (position mounts in one frame).
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const skSetup = await ev(`() => {
+      if (window.lenis) window.lenis.stop();
+      const c = document.getElementById('skCard');
+      if (!c) return { err: 'no #skCard' };
+      const w = [...document.querySelectorAll('.sk-word')].find(e => e.dataset.tech === "PHP");
+      if (!w) return { err: 'no PHP word' };
+      window.scrollTo(0, w.getBoundingClientRect().top + scrollY - 400);
+      const s = getComputedStyle(c);
+      return { disp: s.display, parent: c.parentElement.tagName, aria: c.getAttribute('aria-hidden'),
+        payload: !!document.getElementById('skCardData') };
+    }`);
+    check('S1 card shell exists, hidden at rest, portalled to <body>',
+      skSetup.disp === 'none' && skSetup.parent === 'BODY' && skSetup.aria === 'true' && skSetup.payload,
+      skSetup.err || JSON.stringify(skSetup));
+    if (!skSetup.err) {
+      const pos = await ev(`() => { const w=[...document.querySelectorAll('.sk-word')].find(e=>e.dataset.tech==="PHP"); const r=w.getBoundingClientRect(); return {x:Math.round(r.x+r.width/2), y:Math.round(r.y+r.height/2)}; }`);
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: pos.x, y: pos.y });
+      await wait(150);
+      const open = await ev(`() => {
+        const c = document.getElementById('skCard'), s = getComputedStyle(c), r = c.getBoundingClientRect();
+        const fr = c.querySelector('.sk-card-frame'), img = fr && fr.querySelector('img'), lab = c.querySelector('.sk-card-label');
+        const note = c.querySelector('.sk-card-note'), foot = c.querySelector('.sk-card-foot');
+        const ns = note && getComputedStyle(note), fs = foot && getComputedStyle(foot);
+        return { disp: s.display, x: Math.round(r.x), y: Math.round(r.y), w: +r.width.toFixed(1), h: +r.height.toFixed(1),
+          vh: innerHeight, vw: innerWidth, rad: s.borderRadius,
+          bg: s.backgroundColor, pad: s.padding, trdur: s.transitionDuration, anim: s.animationName,
+          title: (c.querySelector('.sk-card-title') || {}).textContent,
+          note: note && note.textContent, noteFs: ns && ns.fontSize, noteLh: ns && ns.lineHeight,
+          frames: c.querySelectorAll('.sk-card-frame').length,
+          tag: fr && fr.tagName, href: fr && fr.getAttribute('href'), target: fr && fr.getAttribute('target'),
+          ar: fr && getComputedStyle(fr).aspectRatio, imgW: img && +img.getBoundingClientRect().width.toFixed(1),
+          label: lab && lab.textContent, foot: foot && foot.textContent,
+          footFs: fs && fs.fontSize, footLs: fs && fs.letterSpacing, footTt: fs && fs.textTransform, footFf: fs && fs.fontFamily.split(',')[0] };
+      }`);
+      check('S2 real hover opens the card at the measured geometry',
+        open.disp !== 'none' && open.w === 288 && open.rad === '16px' && open.bg === 'rgba(23, 23, 23, 0.95)' && open.pad === '16px'
+        && Math.abs(open.x - Math.min(pos.x + 22, open.vw - open.w - 12)) <= 4
+        && Math.abs(open.y - Math.min(pos.y + 22, open.vh - open.h - 12)) <= 4, JSON.stringify(open));
+      check('S2b no entrance animation (reference mounts in one frame)',
+        open.trdur === '0s' && (open.anim === 'none' || open.anim === ''), open.trdur + '/' + open.anim);
+      check('S3 shots come from project tags and link to the live site',
+        open.frames >= 1 && open.tag === 'A' && /^https?:/.test(open.href || '') && open.target === '_blank'
+        && /16\s*\/\s*10/.test(open.ar || '') && /Remotee/.test(open.label || ''), JSON.stringify(open));
+      check('S5 card type: note 12/19.5, foot mono 10 uppercase .16em',
+        open.noteFs === '12px' && open.noteLh === '19.5px' && open.footFs === '10px'
+        && Math.abs(parseFloat(open.footLs) - 1.6) < 0.05 && open.footTt === 'uppercase' && /mono/i.test(open.footFf),
+        [open.noteFs, open.noteLh, open.footFs, open.footLs, open.footTt, open.footFf].join(' | '));
+
+      // S4 click pins: it must survive the pointer leaving, and un-pin on the second click
+      await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: pos.x, y: pos.y, button: 'left', clickCount: 1 });
+      await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: pos.x, y: pos.y, button: 'left', clickCount: 1 });
+      await wait(120);
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5 });
+      await wait(200);
+      const pinned = await ev(`() => ({ disp: getComputedStyle(document.getElementById('skCard')).display,
+        on: !!document.querySelector('.sk-word.on') })`);
+      check('S4 click pins the card after the pointer leaves', pinned.disp !== 'none' && pinned.on, JSON.stringify(pinned));
+      await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: pos.x, y: pos.y, button: 'left', clickCount: 1 });
+      await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: pos.x, y: pos.y, button: 'left', clickCount: 1 });
+      await wait(120);
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5 });
+      await wait(200);
+      const unpinned = await ev(`() => ({ disp: getComputedStyle(document.getElementById('skCard')).display,
+        on: !!document.querySelector('.sk-word.on') })`);
+      check('S4b second click unpins and closes', unpinned.disp === 'none' && !unpinned.on, JSON.stringify(unpinned));
+
+      // S6 keyboard path: focusing the word must open the card and name it as the description
+      const kb = await ev(`() => {
+        const w = [...document.querySelectorAll('.sk-word')].find(e => e.dataset.tech === 'PHP');
+        document.activeElement?.blur();   // the click above left focus here, so focus() would not fire
+        w.focus();
+        const c = document.getElementById('skCard');
+        return { disp: getComputedStyle(c).display, desc: w.getAttribute('aria-describedby'),
+          link: c.querySelector('.sk-card-frame')?.getAttribute('href') || null };
+      }`);
+      check('S6 keyboard focus opens the card and exposes the live link',
+        kb.disp === 'block' && kb.desc === 'skCard' && /^https?:/.test(kb.link || ''), JSON.stringify(kb));
+    }
+
     // G1: photoCard tilt must be spring-driven. A lerp converges monotonically and can never cross the
     // target; a k150/c18 spring overshoots ~4%. So: drive a real pointer, sample the inline angles, look for the crossing.
     const pc = byId.photoCard;
@@ -316,19 +407,37 @@ async function checkSite(url) {
     check('G8 journeyYear duration .5s', String(yd).trim() === '0.5s', 'rule ' + yd);
   } else {
     // reduced-motion pass
-    const rv = await ev(`() => { const e = document.querySelector('.rv'); return e ? getComputedStyle(e).opacity : 'none'; }`);
-    check('REDUCED .rv visible without reveal', rv === '1' || rv === 'none', 'opacity ' + rv);
-    const inline = await ev(`() => ({ inner: (document.querySelector('.hero-inner')||{}).style?.cssText || '', decor: (document.querySelector('.hero-decor')||{}).style?.cssText || '' })`);
+    // reduced-motion pass. Each one fails when the node is missing: a check that treats
+    // "nothing on the page" as a pass is how an attach-to-about:blank bug hid for a run.
+    const rv = await ev(`() => { const e = document.querySelector('.rv'); return e ? getComputedStyle(e).opacity : 'MISSING'; }`);
+    check('REDUCED .rv visible without reveal', rv === '1', 'opacity ' + rv);
+    const inline = await ev(`() => ({ inner: (document.querySelector('.hero-inner')||{}).style?.cssText ?? 'MISSING', decor: (document.querySelector('.hero-decor')||{}).style?.cssText ?? 'MISSING' })`);
     check('REDUCED hero layers left alone', inline.inner === '' && inline.decor === '', JSON.stringify(inline));
-    const orb = await ev(`() => { const o = document.querySelector('.orb-1'); return o ? getComputedStyle(o).animationName : 'none'; }`);
+    const orb = await ev(`() => { const o = document.querySelector('.orb-1'); return o ? getComputedStyle(o).animationName : 'MISSING'; }`);
     check('REDUCED orbs animation off', orb === 'none' || orb === 'none, none', orb);
+    // the card is not an animation, so reduced motion must not gate the feature away
+    const rp = await ev(`() => {
+      if (window.lenis) window.lenis.stop();
+      const w = [...document.querySelectorAll('.sk-word')].find(e => e.dataset.tech === 'PHP');
+      if (!w || !document.getElementById('skCard')) return null;
+      window.scrollTo(0, w.getBoundingClientRect().top + scrollY - 400);
+      return 1;
+    }`);
+    if (rp) {
+      await new Promise(r => setTimeout(r, 500));
+      const p = await ev(`() => { const w = [...document.querySelectorAll('.sk-word')].find(e => e.dataset.tech === 'PHP'); const r = w.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; }`);
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: p.x, y: p.y });
+      await new Promise(r => setTimeout(r, 150));
+      const rd = await ev(`() => { const c = document.getElementById('skCard'); return c ? getComputedStyle(c).display : 'no card'; }`);
+      check('REDUCED skill card still opens on hover', rd !== 'none' && rd === 'block', rd);
+    } else check('REDUCED skill card still opens on hover', false, 'no #skCard or no PHP word');
   }
 
   close();
   return d;
 }
 
-async function shot(url, outDir, sections) {
+async function shot(url, outDir, sections, hover) {
   const { ev, send, close } = await open(url);
   mkdirSync(outDir, { recursive: true });
   await ev(`() => { if (window.lenis) window.lenis.stop(); return 1; }`);
@@ -337,6 +446,23 @@ async function shot(url, outDir, sections) {
     if (y === null) { console.log('  SKIP', id); continue; }
     await ev(`() => { window.scrollTo(0, ${y}); document.querySelectorAll('.rv,.rv-pop').forEach(e => e.classList.add('vis')); return 1; }`);
     await new Promise(r => setTimeout(r, 800));
+    if (hover) {
+      // a hover-only surface cannot be photographed; drive a real mouse onto the word.
+      // The word is far below the section top, so scroll to it, not to the section.
+      const p = await ev(`() => {
+        const w = [...document.querySelectorAll('.sk-word')].find(e => e.dataset.tech === ${JSON.stringify(hover)});
+        if (!w) return null;
+        window.scrollTo(0, Math.max(0, w.getBoundingClientRect().top + scrollY - 300));
+        return 1;
+      }`);
+      if (!p) { console.log('  no word', hover); }
+      else {
+        await new Promise(r => setTimeout(r, 400));
+        const c = await ev(`() => { const w = [...document.querySelectorAll('.sk-word')].find(e => e.dataset.tech === ${JSON.stringify(hover)}); const r = w.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; }`);
+        await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: c.x, y: c.y });
+        await new Promise(r => setTimeout(r, 250));
+      }
+    }
     const img = await send('Page.captureScreenshot', { format: 'png' });
     const f = join(outDir, `shot_${id}.png`);
     writeFileSync(f, Buffer.from(img.result?.data, 'base64'));
@@ -361,8 +487,9 @@ if (mode === 'dump') {
   process.exit(fail ? 1 : 0);
 } else if (mode === 'shot') {
   const secs = (args.find(a => a.startsWith('--sections='))?.split('=')[1] || 'top,about,projects,timeline,certs,guestbook,contact,footer').split(',');
-  await shot(urlArg || MINE, args.find(a => a.startsWith('--out='))?.split('=')[1] || '.tmpshots', secs);
+  await shot(urlArg || MINE, args.find(a => a.startsWith('--out='))?.split('=')[1] || '.tmpshots', secs,
+    args.find(a => a.startsWith('--hover='))?.split('=')[1]);
 } else {
-  console.log('usage: node verify/motion.mjs dump <url> [--out=f.json] | diff a.json b.json | check [url] [--reduced] | shot [url] [--sections=a,b] [--out=dir]');
+  console.log('usage: node verify/motion.mjs dump <url> [--out=f.json] | diff a.json b.json | check [url] [--reduced] | shot [url] [--sections=a,b] [--hover=PHP] [--out=dir]');
   process.exit(2);
 }
