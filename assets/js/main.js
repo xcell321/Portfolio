@@ -221,24 +221,89 @@ function toggleNav(){
   addEventListener('load',()=>{if(active)place(active)});
   paint();
 })();
-// skills: accordion (one row at a time) + click a word to pin it
+// skills: accordion (one row at a time) + hover a word for its card, click to pin it
 (function(){
   const rows=[...document.querySelectorAll('#about .sk-row')];
+  const words=[...document.querySelectorAll('#about .sk-word')];
   rows.forEach(r=>{
     const b=r.querySelector('.sk-head-btn');if(!b)return;
     b.addEventListener('click',()=>{
       const was=r.classList.contains('open');
       rows.forEach(o=>{o.classList.remove('open');o.querySelector('.sk-head-btn')?.setAttribute('aria-expanded','false')});
       if(!was){r.classList.add('open');b.setAttribute('aria-expanded','true')}
+      guard();
     });
   });
-  document.querySelectorAll('#about .sk-word').forEach(w=>{
+  const card=document.getElementById('skCard'), src=document.getElementById('skCardData');
+  if(!card||!src)return;
+  let data=null;
+  try{data=JSON.parse(src.textContent)}catch(e){return}
+  if(!data)return;
+  // .sk-body clips (overflow:hidden + max-height) and the reveal writes a transform, so the
+  // card cannot live under the word. It is portalled to <body> and positioned from the rect.
+  document.body.appendChild(card);
+  const title=card.querySelector('.sk-card-title'), note=card.querySelector('.sk-card-note'), shots=card.querySelector('.sk-card-shots');
+  const OFF=22, EDGE=12;                 // reference anchors the card word-centre +22/+22
+  let pinned=null, shown=null, hideT=0;
+
+  function place(w){
+    const r=w.getBoundingClientRect(), b=card.getBoundingClientRect();
+    const x=Math.min(r.left+r.width/2+OFF, innerWidth-b.width-EDGE);
+    const y=Math.min(r.top+r.height/2+OFF, innerHeight-b.height-EDGE);
+    card.style.left=Math.max(EDGE,x)+'px'; card.style.top=Math.max(EDGE,y)+'px';
+  }
+  function fill(word){
+    const d=data[word]; if(!d)return false;
+    title.textContent=word; note.textContent=d.note||'';
+    shots.textContent='';
+    (d.shots||[]).forEach(s=>{
+      const box=document.createElement('div'); box.className='sk-card-shot';
+      const live=typeof s.u==='string'&&/^https?:/i.test(s.u);
+      const frame=document.createElement(live?'a':'div');
+      frame.className='sk-card-frame';
+      if(live){frame.href=s.u;frame.target='_blank';frame.rel='noopener'}
+      const img=document.createElement('img'); img.src=s.i; img.alt=s.t+' screenshot'; img.loading='lazy'; img.decoding='async';
+      frame.append(img);
+      const lab=document.createElement('p'); lab.className='sk-card-label'; lab.textContent=s.t;
+      box.append(frame,lab); shots.append(box);
+    });
+    return true;
+  }
+  function show(w){
+    if(!fill(w.dataset.tech))return;
+    shown=w; card.classList.add('open'); card.setAttribute('aria-hidden','false');
+    w.setAttribute('aria-describedby','skCard'); place(w);
+  }
+  function hide(){
+    card.classList.remove('open'); card.setAttribute('aria-hidden','true');
+    if(shown)shown.removeAttribute('aria-describedby');
+    shown=null;
+  }
+  function leave(){ if(hideT)clearTimeout(hideT); hideT=setTimeout(()=>{hideT=0;if(!pinned)hide()},120) }
+  // a pinned word whose row just closed is gone; drop the pin with it
+  function guard(){ if(shown&&!shown.getClientRects().length){pinned=null;hide()} else if(pinned&&!pinned.getClientRects().length)pinned=null; }
+  const reflow=()=>{ guard(); if(shown)place(shown) };
+  addEventListener('scroll',reflow,{passive:true});
+  addEventListener('resize',reflow);
+
+  words.forEach(w=>{
+    if(!data[w.dataset.tech])return;
+    w.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'){if(hideT)clearTimeout(hideT);show(w)}});
+    w.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&w!==pinned)leave()});
+    w.addEventListener('focus',()=>show(w));
+    w.addEventListener('blur',()=>{if(w!==pinned)hide()});
     w.addEventListener('click',()=>{
       const on=w.classList.contains('on');
-      document.querySelectorAll('#about .sk-word.on').forEach(o=>{o.classList.remove('on');o.setAttribute('aria-expanded','false')});
-      if(!on){w.classList.add('on');w.setAttribute('aria-expanded','true')}
+      words.forEach(o=>{o.classList.remove('on');o.setAttribute('aria-expanded','false')});
+      if(on){ pinned=null; hide(); return; }
+      if(!shown||shown!==w)show(w);
+      if(!card.classList.contains('open'))return;   // word had no card: pin state is meaningless
+      w.classList.add('on'); w.setAttribute('aria-expanded','true'); pinned=w;
     });
   });
+  // hover-intent: crossing from the word onto the card keeps it open so the shot is clickable
+  card.addEventListener('pointerenter',()=>{if(hideT)clearTimeout(hideT)});
+  card.addEventListener('pointerleave',()=>{if(!pinned)leave()});
 })();
 // feature cards: spotlight glow follows the cursor; tilt is a spring, and only on a wide fine pointer
 (function(){
