@@ -14,3 +14,7 @@ memory/
 reviewer-harness/
 skills/
 
+
+# harness scratch (measured dumps and screenshots)
+verify/out/
+.tmpshots/
