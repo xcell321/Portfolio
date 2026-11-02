@@ -56,6 +56,7 @@ return [
   'about.skills_note'    => "Hover a word to see where I've used it. Click to pin.",
   'about.skills_updated' => 'always a work in progress · updated Oct 2026',
   'about.skills_tip'     => 'ask me about this one',
+  'about.skills_card_foot' => 'Click to pin · shot opens live',
   'about.toolkit_title'  => 'Toolkit',
   'about.toolkit_note'   => 'What I reach for daily.',
   'about.toolkit_sub'    => 'Go ahead, drag them.',
@@ -129,4 +130,25 @@ return [
     ['Tooling','Git & GitHub / XAMPP / AI integrations','The everyday setup: version control, local servers, and AI in the loop.','AI integrations'],
   ],
   'toolkit' => ['PHP','MySQL','JavaScript','Tailwind','Laravel','Flutter','Firebase','Git','Figma','XAMPP','CSS3','HTML5'],
+  // One line per skill word, shown in the card that opens when you hover that word.
+  // Key must match the word exactly as it is written in `skills` above.
+  'tech_notes' => [
+    'React'           => 'Component trees, hooks and state I can still reason about six months later.',
+    'PHP'             => 'The engine behind everything here — app logic, endpoints, and the templating this page runs on.',
+    'JavaScript'      => 'Vanilla-first interaction: reveal timing, drag, and the small springs that make the page feel physical.',
+    'Tailwind CSS'    => 'Utility styling when a design system already exists; I keep the config small.',
+    'CSS animations'  => 'Keyframes, transitions and individual transform properties — no animation library needed.',
+    'MySQL'           => 'Schemas that hold up: relations, indexes, and data I can migrate back out of.',
+    'Node.js'         => 'Tooling, scripts and small services that sit around the app rather than inside it.',
+    'Firebase'        => 'Auth, realtime reads and fast prototypes without standing up a server first.',
+    'Laravel'         => 'Routing, Eloquent and queues for when a project outgrows hand-rolled PHP.',
+    'Flutter'         => 'One codebase, two platforms, with the feel of native on both.',
+    'React Native'    => 'Logic shared with the web build, interface kept native.',
+    'Figma'           => 'Where the interface is decided — before a single line of code exists.',
+    'Design systems'  => 'Tokens, components and documented states, so the next screen is faster than the last.',
+    'UX'              => 'Flow first: the shortest honest path to the thing a visitor came for.',
+    'Git & GitHub'    => 'Branches, reviews and history a stranger can actually read.',
+    'XAMPP'           => 'The local stack this site is built on: Apache, PHP, MySQL.',
+    'AI integrations' => 'Model endpoints wired into real features, with a fallback for when they are wrong.',
+  ],
 ];

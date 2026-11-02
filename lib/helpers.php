@@ -122,3 +122,27 @@ function eyebrow(string $kicker, string $extra = ''): string {
   if ($num !== '') $out .= '<span class="mono acc">' . e($num) . '</span><span class="rule"></span>';
   return $out . '<span class="eyebrow">' . e($label) . '</span></div>';
 }
+
+/**
+ * Which shipped projects used a given tech word — derived from project tags, never authored.
+ * Matching is exact and case-insensitive: the tag list is the contract. Containment was the
+ * first idea and it lied — "Tailwind CSS" matched a plain "CSS" tag and claimed a project
+ * used Tailwind. A word with no matching tag still gets its note, just no shots.
+ * Only rows with a real screenshot file come back.
+ *
+ * @return list<array{title:string, img:string, url:string}>
+ */
+function tech_usage(string $word, array $projects, int $max = 2): array {
+  $w = strtolower(trim($word));
+  if ($w === '') return [];
+  $out = [];
+  foreach ($projects as $p) {
+    $tags = array_map(static fn($t) => strtolower(trim($t)), explode(',', (string)($p['tags'] ?? '')));
+    if (!in_array($w, $tags, true)) continue;
+    $img = trim((string)($p['image'] ?? ''));
+    if ($img === '' || !is_file(__DIR__ . '/../' . $img)) continue;
+    $out[] = ['title' => (string)($p['title'] ?? ''), 'img' => $img, 'url' => trim((string)($p['live_url'] ?? ''))];
+    if (count($out) >= $max) break;
+  }
+  return $out;
+}
