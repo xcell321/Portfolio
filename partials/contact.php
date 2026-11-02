@@ -1,5 +1,5 @@
 <section id="contact"><div class="wrap">
-  <div class="kicker"><?=token('contact.kicker')?></div>
+  <?=eyebrow(token("contact.kicker"))?>
   <h2 class="title rv"><?=split_title(token('contact.title'), 2)?></h2>
   <p style="color:var(--mut);max-width:640px;margin-bottom:16px"><?=e(token('contact.lead'))?></p>
   <?php if ($msg_ok): ?><p style="background:rgba(240,189,122,.12);border:1px solid var(--acc);padding:12px;border-radius:12px;margin-bottom:12px"><?=e($msg_ok)?></p><?php endif; ?>

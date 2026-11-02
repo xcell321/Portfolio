@@ -1,7 +1,7 @@
 <section id="timeline"><div class="wrap">
   <div class="journey-grid">
     <div class="journey-side">
-      <div class="kicker rv"><?=token('journey.kicker')?></div>
+      <?=eyebrow(token('journey.kicker'), 'rv')?>
       <h2 class="title rv"><?=split_title(token('journey.title'), 2)?></h2>
       <p class="journey-lead rv" data-rvd="0.06"><?=e(token('journey.lead'))?></p>
       <div class="journey-now rv" data-rvd="0.12" aria-hidden="true">

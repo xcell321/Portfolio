@@ -108,3 +108,17 @@ function split_title(string $text, int $words = 3): string {
   $tail = implode(' ', array_slice($parts, $n - $words));
   return e($head) . ' <span class="dim">' . e($tail) . '</span>';
 }
+
+/**
+ * Section marker: "04 CREDENTIALS" -> accent number, short rule, muted label.
+ * Every section eyebrow renders through this so the pattern lives in one place.
+ */
+function eyebrow(string $kicker, string $extra = ''): string {
+  $parts = preg_split('/\s+/', trim($kicker), 2);
+  $num = (count($parts) === 2 && preg_match('/^\d+$/', $parts[0] ?? '')) ? $parts[0] : '';
+  $label = $num !== '' ? $parts[1] : trim($kicker);
+  $cls = 'sec-eyebrow' . ($extra !== '' ? ' ' . $extra : '');
+  $out = '<div class="' . $cls . '">';
+  if ($num !== '') $out .= '<span class="mono acc">' . e($num) . '</span><span class="rule"></span>';
+  return $out . '<span class="eyebrow">' . e($label) . '</span></div>';
+}

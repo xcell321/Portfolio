@@ -1,8 +1,5 @@
 <?php
 // About — intro, feature cards, skills, toolkit and a small terminal.
-$ak    = preg_split('/\s+/', trim((string)token('about.kicker')), 2);
-$aknum = $ak[0] ?? '';
-$aklab = $ak[1] ?? '';
 $tip   = (string)token('about.skills_tip');
 
 // Normalise skill rows: [name, "a / b / c", description, highlighted word]
@@ -63,7 +60,7 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
   <div class="about-head rv">
     <div class="about-head-main">
-      <div class="work-eyebrow"><span class="mono acc"><?=e($aknum)?></span><span class="rule"></span><span class="eyebrow"><?=e($aklab)?></span></div>
+      <?=eyebrow(token('about.kicker'))?>
       <h2 class="title"><?=split_title(token('about.title'), 3)?></h2>
       <p class="about-lead"><?=e(token('about.lead'))?></p>
     </div>
