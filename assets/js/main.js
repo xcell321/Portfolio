@@ -1,13 +1,42 @@
 
+// ---- motion spec: every ported value lives here once, read by the effects below and by verify/motion.mjs
+var MOTION = {
+  tilt:   { k:150, c:18,  m:1 },        // hero photo card
+  spot:   { k:420, c:36,  m:0.6 },      // about feature cards
+  card:   { k:180, c:20,  m:1, amp:4 }, // project cards
+  tab:    { k:380, c:34,  m:1 },        // project tracker fill
+  url:    { dur:0.25, y:6 },            // preview address chip
+  tl:     { k:120, c:30,  m:1, rest:0.001 }, // timeline progress fill
+  content:{ opRange:0.7, y:-120 },      // hero foreground on scroll
+  decor:  { opMin:0.2, opRange:0.8, y:-120 }, // hero background layer on scroll
+  guest:  { dur:0.3, stagger:0.02, scale:0.9, rot:-3 },
+  badge:  { rot:-12, from:-60, delay:1.4 },
+  yearDur:'0.5s'
+};
+// Semi-implicit Euler spring. step(dt) advances toward the target and returns true once settled,
+// in which case it snaps the residual away. dt is the caller's job to clamp.
+function spring(k, c, m, rest) {
+  m = m || 1; rest = rest === undefined ? 0.01 : rest;
+  return {
+    x: 0, v: 0, t: 0,
+    to:  function (t) { this.t = t; return this; },
+    snap:function () { this.x = this.t; this.v = 0; return this; },
+    step: function (dt) {
+      this.v += ((-k * (this.x - this.t) - c * this.v) / m) * dt;
+      this.x += this.v * dt;
+      if (Math.abs(this.v) < rest && Math.abs(this.x - this.t) < rest) { this.x = this.t; this.v = 0; return true; }
+      return false;
+    }
+  };
+}
+
 // smooth scrolling (Lenis, vendored) — same duration/easing/multipliers as the reference build.
 // skipped on touch pointers, low-end devices and when reduced motion is requested.
 (function(){
   if(!window.Lenis)return;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const coarse=matchMedia('(pointer: coarse)').matches||navigator.maxTouchPoints>0;
-  const conn=navigator.connection||{};
-  const lowEnd=conn.saveData===true||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)||(navigator.deviceMemory&&navigator.deviceMemory<=4);
-  if(coarse||lowEnd)return;
+  if(coarse||(window.__perf&&window.__perf.lowEnd))return;
   let raf=0;
   const lenis=new Lenis({
     duration:.7,
@@ -53,9 +82,29 @@ document.addEventListener('click',function(e){
 // reveal on scroll: viewport {once:true, margin:-60px};
 // stagger delay read from data-rvd → painted as the --rvd CSS var (transition-delay)
 (function(){
-  document.querySelectorAll('.rv[data-rvd]').forEach(el=>{el.style.setProperty('--rvd',el.dataset.rvd+'s')});
+  document.querySelectorAll('.rv[data-rvd],.rv-pop[data-rvd]').forEach(el=>{el.style.setProperty('--rvd',el.dataset.rvd+'s')});
   const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target)}})},{rootMargin:'-60px 0px -60px 0px'});
-  document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+  document.querySelectorAll('.rv,.rv-pop').forEach(el=>io.observe(el));
+})();
+// guestbook rows: drag lifts them (scale + raised z while held); release drops them back
+(function(){
+  document.querySelectorAll('.rv-pop').forEach(el=>{
+    let sx=0,sy=0,drag=false;
+    el.addEventListener('pointerdown',e=>{
+      if(e.button)return;
+      if(e.target.closest('a,button,input,textarea'))return;
+      drag=true;sx=e.clientX;sy=e.clientY;
+      el.classList.add('dragging');
+      try{el.setPointerCapture(e.pointerId)}catch(_){}
+    });
+    el.addEventListener('pointermove',e=>{
+      if(!drag)return;
+      el.style.translate=(e.clientX-sx)+'px '+(e.clientY-sy)+'px';
+    });
+    function end(){if(!drag)return;drag=false;el.classList.remove('dragging');el.style.translate=''}
+    el.addEventListener('pointerup',end);
+    el.addEventListener('pointercancel',end);
+  });
 })();
 // floating pill nav on scroll (transparent at top, pill once scrolled) — rAF-throttled,
 // elements resolved once instead of per scroll event
@@ -191,20 +240,22 @@ function toggleNav(){
     });
   });
 })();
-// feature cards: spotlight glow follows the cursor
+// feature cards: spotlight glow follows the cursor; tilt is a spring, and only on a wide fine pointer
 (function(){
-  const tilt=4,k=180,c=20,reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const tilt=4, P=MOTION.spot, reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const MQ_LG=matchMedia('(min-width: 1024px)'), MQ_FINE=matchMedia('(pointer: fine)');
+  const canTilt=()=>!reduce&&MQ_LG.matches&&MQ_FINE.matches&&!(window.__perf&&window.__perf.lowEnd);
   document.querySelectorAll('.spot').forEach(el=>{
-    let rx=0,ry=0,tx=0,ty=0,vx=0,vy=0,raf=0,last=0;
+    const sx=spring(P.k,P.c,P.m), sy=spring(P.k,P.c,P.m);
+    let raf=0,last=0;
     function frame(now){
       if(!last)last=now;
       const dt=Math.min((now-last)/1000,.033);last=now;
-      vx+=(-k*(rx-tx)-c*vx)*dt;rx+=vx*dt;
-      vy+=(-k*(ry-ty)-c*vy)*dt;ry+=vy*dt;
-      el.style.transform='perspective(1000px) rotateX('+rx.toFixed(3)+'deg) rotateY('+ry.toFixed(3)+'deg)';
-      if(Math.abs(vx)>.01||Math.abs(rx-tx)>.01||Math.abs(vy)>.01||Math.abs(ry-ty)>.01){raf=requestAnimationFrame(frame);return}
-      rx=tx;ry=ty;vx=vy=0;last=0;raf=0;
-      el.style.transform='perspective(1000px) rotateX('+rx+'deg) rotateY('+ry+'deg)';
+      const done=sx.step(dt)&&sy.step(dt);
+      el.style.transform='perspective(1000px) rotateX('+sy.x.toFixed(3)+'deg) rotateY('+sx.x.toFixed(3)+'deg)';
+      if(!done){raf=requestAnimationFrame(frame);return}
+      last=0;raf=0;
+      el.style.transform='perspective(1000px) rotateX('+sy.x+'deg) rotateY('+sx.x+'deg)';
     }
     function start(){if(!raf){last=0;raf=requestAnimationFrame(frame)}}
     el.addEventListener('pointermove',e=>{
@@ -212,16 +263,16 @@ function toggleNav(){
       const x=e.clientX-r.left,y=e.clientY-r.top;
       el.style.setProperty('--mx',x+'px');
       el.style.setProperty('--my',y+'px');
-      if(reduce||e.pointerType!=='mouse')return;
-      tx=-(y/r.height-.5)*tilt*2;
-      ty=(x/r.width-.5)*tilt*2;
+      if(!canTilt()||e.pointerType!=='mouse')return;
+      sy.to(-(y/r.height-.5)*tilt*2);
+      sx.to((x/r.width-.5)*tilt*2);
       start();
     });
     el.addEventListener('pointerleave',()=>{
       el.style.setProperty('--mx','-1000px');
       el.style.setProperty('--my','-1000px');
-      if(reduce)return;
-      tx=0;ty=0;start();
+      if(!canTilt())return;
+      sy.to(0);sx.to(0);start();
     });
   });
 })();
@@ -368,6 +419,36 @@ function tidyUp(){
   const tabs=[].slice.call(document.querySelectorAll('.work-preview .tab'));
   const urlEl=document.querySelector('.work-preview .url-text');
   const domains=shots.map(s=>s.dataset.domain||'');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // cards fade in .06s apart, in list order
+  items.forEach((el,k)=>el.style.setProperty('--rvd',(k*0.06).toFixed(2)+'s'));
+  // tracker fill is a spring, not a CSS transition — one rAF drives every bar
+  const P=MOTION.tab,fills=tabs.map(t=>t.querySelector('.fill'));
+  const at=Math.max(0,tabs.findIndex(t=>t.classList.contains('on')));
+  const sp=fills.map((f,k)=>{const s=spring(P.k,P.c,P.m);s.to(k===at?1:0);s.snap();if(f)f.style.transform='scaleX('+s.x+')';return s});
+  let tabRaf=0,tabLast=0;
+  function tabFrame(now){
+    const dt=Math.min((now-tabLast)/1000,.033);tabLast=now;
+    let done=true;
+    fills.forEach((f,k)=>{if(!sp[k].step(dt))done=false;if(f)f.style.transform='scaleX('+sp[k].x.toFixed(4)+')';});
+    if(done){tabRaf=0;return}
+    tabRaf=requestAnimationFrame(tabFrame);
+  }
+  function chaseTab(i){
+    if(!fills.length)return;
+    sp.forEach((s,k)=>{s.to(k===i?1:0);if(reduce)s.snap();});
+    if(reduce){fills.forEach((f,k)=>{if(f)f.style.transform='scaleX('+(k===i?1:0)+')'});return}
+    if(!tabRaf){tabLast=performance.now();tabRaf=requestAnimationFrame(tabFrame)}
+  }
+  // the address chip arrives from below and leaves upward, .25s end to end
+  const U=MOTION.url,half=U.dur*500;
+  function swapUrl(txt){
+    if(!urlEl||!txt||txt===urlEl.textContent)return;
+    if(reduce||!urlEl.animate){urlEl.textContent=txt;return}
+    urlEl.animate([{transform:'translateY(0)',opacity:1},{transform:'translateY(-'+U.y+'px)',opacity:0}],{duration:half,easing:'cubic-bezier(.22,1,.36,1)'})
+      .finished.then(()=>{urlEl.textContent=txt;
+        urlEl.animate([{transform:'translateY('+U.y+'px)',opacity:0},{transform:'translateY(0)',opacity:1}],{duration:half,easing:'cubic-bezier(.22,1,.36,1)'});},()=>{});
+  }
   let cur=-1;
   function go(i){
     if(i===cur||i<0||i>=items.length)return;
@@ -376,7 +457,7 @@ function tidyUp(){
     shots.forEach((el,k)=>el.classList.toggle('on',k===i));
     phones.forEach((el,k)=>el.classList.toggle('on',k===i));
     tabs.forEach((el,k)=>{el.classList.toggle('on',k===i);el.setAttribute('aria-current',k===i?'true':'false')});
-    if(urlEl&&domains[i])urlEl.textContent=domains[i];
+    chaseTab(i);swapUrl(domains[i]);
   }
   const io=new IntersectionObserver(es=>{
     es.forEach(e=>{if(e.isIntersecting)go(items.indexOf(e.target))});
@@ -386,8 +467,42 @@ function tidyUp(){
     const el=items[+t.dataset.index];if(!el)return;
     const y=el.getBoundingClientRect().top+window.scrollY-80;
     const l=window.lenis;
-    l&&l.scrollTo?l.scrollTo(y,{duration:1.1}):window.scrollTo({top:y,behavior:'smooth'});
+    l&&l.scrollTo?l.scrollTo(y,{duration:0.6}):window.scrollTo({top:y,behavior:'smooth'});
   }));
+})();
+// project cards: 4deg tilt on a 180/20 spring, wide fine pointer only
+(function(){
+  const P=MOTION.card,reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const MQ_LG=matchMedia('(min-width: 1024px)'),MQ_FINE=matchMedia('(pointer: fine)');
+  const can=()=>!reduce&&MQ_LG.matches&&MQ_FINE.matches&&!(window.__perf&&window.__perf.lowEnd);
+  document.querySelectorAll('.work-item').forEach(el=>{
+    const sx=spring(P.k,P.c,P.m),sy=spring(P.k,P.c,P.m);
+    let raf=0,last=0;
+    function frame(now){
+      if(!last)last=now;
+      const dt=Math.min((now-last)/1000,.033);last=now;
+      const done=sx.step(dt)&&sy.step(dt);
+      el.style.transform='perspective(1000px) rotateX('+sy.x.toFixed(3)+'deg) rotateY('+sx.x.toFixed(3)+'deg)';
+      if(!done){raf=requestAnimationFrame(frame);return}
+      last=0;raf=0;
+    }
+    function start(){if(!raf){last=0;raf=requestAnimationFrame(frame)}}
+    el.addEventListener('pointermove',e=>{
+      if(!can()||e.pointerType!=='mouse')return;
+      const r=el.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+      sy.to(-(y/r.height-.5)*P.amp*2);sx.to((x/r.width-.5)*P.amp*2);start();
+    });
+    el.addEventListener('pointerleave',()=>{if(!can())return;sy.to(0);sx.to(0);start()});
+  });
+})();
+// work marquee — pause on hover (same pattern as hero marquee)
+(function(){
+  const mq=document.getElementById('workMarquee');
+  if(!mq)return;
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduced)return;
+  mq.addEventListener('mouseenter',()=>{mq.style.animationPlayState='paused'});
+  mq.addEventListener('mouseleave',()=>{mq.style.animationPlayState='running'});
 })();
 // command palette:
 // groups Navigate/Projects/Actions/Accent color/Elsewhere (a group shows only when it has a match),
@@ -592,59 +707,74 @@ function setDuty(on){
   if(sl){let L=[];try{L=JSON.parse(sl.dataset.lines||'[]')}catch(e){}
     if(L.length){
       const h=()=>{try{return +new Intl.DateTimeFormat('en-US',{hour:'numeric',hourCycle:'h23',timeZone:'Asia/Manila'}).format(new Date())}catch(e){return new Date().getHours()}};
-      const paintSL=()=>{const t=L[Math.floor(h()/6)%L.length];if(sl.textContent!==t)sl.textContent=t;};
+      const paintSL=()=>{
+        const t=L[Math.floor(h()/6)%L.length];
+        if(sl.textContent!==t){
+          sl.style.transition="opacity 0.3s";
+          sl.style.opacity=0;
+          setTimeout(()=>{sl.textContent=t;sl.style.opacity=1}, 300);
+        }
+      };
       paintSL();setInterval(paintSL,60000);
     }
   }
   const pc=document.getElementById('photoCard');
-  // 3D tilt on pointer (±14°, spring 150/18) + duty flip on hover/unhover
-  // useSpring approximation: current value chases the target via lerp .12/frame
+  // 3D tilt on pointer (±7°, spring 150/18) + duty flip on hover/unhover; the glow stays a plain lerp
   if(pc){
-    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let tx=0,ty=0,cx=0,cy=0,gx=50,gy=50,gcx=50,gcy=50,raf=0,active=false;
-    function frame(){
-      cx+=(tx-cx)*.12;cy+=(ty-cy)*.12;gcx+=(gx-gcx)*.25;gcy+=(gy-gcy)*.25;
-      pc.style.transform='rotate(3deg) perspective(1000px) rotateX('+cy.toFixed(3)+'deg) rotateY('+cx.toFixed(3)+'deg)';
+    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches, P=MOTION.tilt;
+    const sx=spring(P.k,P.c,P.m), sy=spring(P.k,P.c,P.m);
+    let gx=50,gy=50,gcx=50,gcy=50,raf=0,last=0;
+    function frame(now){
+      if(!last)last=now;
+      const dt=Math.min((now-last)/1000,.033);last=now;
+      const done=sx.step(dt)&&sy.step(dt);
+      gcx+=(gx-gcx)*.25;gcy+=(gy-gcy)*.25;
+      pc.style.transform='rotate(3deg) perspective(1000px) rotateX('+sy.x.toFixed(3)+'deg) rotateY('+sx.x.toFixed(3)+'deg)';
       const g=document.getElementById('photoGlow');
       if(g)g.style.background='radial-gradient(60% 50% at '+gcx.toFixed(1)+'% '+gcy.toFixed(1)+'%, rgba(255,255,255,0.18), transparent 70%)';
-      if(active||Math.abs(tx-cx)>.01||Math.abs(ty-cy)>.01)raf=requestAnimationFrame(frame);else raf=0;
+      if(done){raf=0;last=0;return}   // run until the spring settles; a new pointermove restarts it
+      raf=requestAnimationFrame(frame);
     }
+    function run(){if(!raf){last=0;raf=requestAnimationFrame(frame)}}
     pc.addEventListener('pointermove',e=>{
       if(reduced||e.pointerType!=='mouse')return;
       const r=pc.getBoundingClientRect();
       const nx=(e.clientX-r.left)/r.width,ny=(e.clientY-r.top)/r.height;
-      tx=(nx-.5)*14;ty=(.5-ny)*14;gx=nx*100;gy=ny*100;
-      active=true;if(!raf)raf=requestAnimationFrame(frame);
+      sx.to((nx-.5)*14);sy.to((.5-ny)*14);gx=nx*100;gy=ny*100;
+      run();
     });
     pc.addEventListener('mouseenter',()=>{setDuty(false)});
-    pc.addEventListener('mouseleave',()=>{tx=0;ty=0;active=false;if(!raf)raf=requestAnimationFrame(frame);setDuty(true)});
+    pc.addEventListener('mouseleave',()=>{sx.to(0);sy.to(0);run();setDuty(true)});
   }
 })();
-// ---- hero scroll-fade:
+// ---- hero scroll-fade: two layers, matching the reference's split
 // progress = scrollY / hero height (offset ["start start","end start"]);
-// opacity 1→0 at [.7] of exit, y 0→−120px at [1]; desktop-only; reduced-motion = static.
-// rAF-throttled, applied to hero-inner content only (bg canvas/orbs stay put).
+// content: opacity 1→0 over [0,.7], y 0→−120. decor: opacity 1→.2 over [0,.8], y 0→−120.
+// desktop-only; reduced-motion = static.
 (function(){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const hero=document.getElementById('top'),inner=hero&&hero.querySelector('.hero-inner');
-  if(!hero||!inner)return;
+  const decor=hero&&hero.querySelector('.hero-decor');
+  if(!hero||!inner||!decor)return;
   // matchMedia(min-width:1024px): mobile keeps static opacity 1
   const mq=matchMedia('(min-width: 1024px)');
   let active=mq.matches,ticking=false,h=0,last='';
   function measure(){h=hero.offsetHeight||inner.offsetHeight||0}
   function apply(){
     ticking=false;
-    if(!active){if(last!==''){inner.style.opacity='';inner.style.transform='';last=''}return}
+    if(!active){if(last!==''){[inner,decor].forEach(el=>{el.style.opacity='';el.style.transform=''});last=''}return}
     if(h<=0)return;
     const p=Math.min(1,Math.max(0,(window.scrollY||window.pageYOffset||0)/h));   // progress 0..1 toward the hero end
-    // transform pairs: opacity [0,.7]→[1,0] (linear), y [0,1]→[0,-120]
-    const op=Math.max(0,1-p/.7);
-    const y=(0-p)*120;
-    const sig=op.toFixed(4)+'|'+y.toFixed(2);
+    const C=MOTION.content,D=MOTION.decor;
+    const op=Math.max(0,1-p/C.opRange);                       // content fully gone at .7
+    const dop=Math.max(D.opMin,1-(1-D.opMin)*Math.min(1,p/D.opRange));
+    const sig=op.toFixed(4)+'|'+dop.toFixed(4);
     if(sig===last)return;                                  // skip redundant writes while scrolling elsewhere
     last=sig;
     inner.style.opacity=op.toFixed(4);
-    inner.style.transform='translate3d(0,'+y.toFixed(2)+'px,0)';
+    inner.style.transform='translate3d(0,'+(p*C.y).toFixed(2)+'px,0)';
+    decor.style.opacity=dop.toFixed(4);
+    decor.style.transform='translate3d(0,'+(p*D.y).toFixed(2)+'px,0)';
   }
   function onScroll(){if(!ticking){ticking=true;requestAnimationFrame(apply)}}
   measure();
@@ -824,7 +954,7 @@ function palFilter(q){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const SPACING=28, RADIUS=180;                          // spacing=28, radius=180
   // low-end heuristic: spacing 1.6x + 33ms throttle + dpr 1
-  const lowEnd=(navigator.hardwareConcurrency||4)<=2||/Android 4|iPhone OS 1[0-2]_/.test(navigator.userAgent);
+  const lowEnd=window.__perf&&window.__perf.veryLowEnd;   // density/DPR throttle, stricter than the Lenis gate
   const spacing=lowEnd?Math.round(1.6*SPACING):SPACING;   // low-end 1.6x spacing rule
   let W=0,H=0,dpr=1,running=false,visible=true,lastT=0,accRgb='212,253,115',bg=null,dots=null;
   // cursor + idle float state — lerp/inertia constants
@@ -997,7 +1127,11 @@ function popSticker(ev){
   const y=ev&&ev.clientY!==undefined?ev.clientY:200;
   canvasBurst(x,y,70);                            // the "pop" sound plays inside the burst
   const badge=document.getElementById('stickerBadge');
-  if(badge){badge.classList.remove('popped');void badge.offsetWidth;badge.classList.add('popped');setTimeout(()=>badge.classList.remove('popped'),600)}
+  // WAAPI, not a class: toggling a class that rewrites the `animation` shorthand would restart
+  // badgeIn, whose 1.4s backwards fill blanks the badge on every click.
+  if(badge&&badge.animate)badge.animate(
+    [{scale:'1',rotate:MOTION.badge.rot+'deg'},{scale:'1.18',rotate:(MOTION.badge.rot-6)+'deg',offset:.4},{scale:'1',rotate:MOTION.badge.rot+'deg'}],
+    {duration:550,easing:'cubic-bezier(.3,1.6,.5,1)'});
   if(!n){try{localStorage.setItem('sticker_pops','1')}catch(e){}}
   secret('sticker');
 }
@@ -1467,6 +1601,27 @@ function popSticker(ev){
     void now.offsetWidth;
     now.classList.add('swap');
   }
+  // The rail lags the scroll instead of tracking it 1:1: raw progress feeds a spring (120/30),
+  // which is what the CSS .18s linear transition used to approximate. It snaps on first paint and
+  // settles exactly on the true value, so the rail never lands short.
+  const P=MOTION.tl, sp=spring(P.k,P.c,P.m,P.rest);
+  let sraf=0,stime=0,primed=false;
+  function write(v){
+    fill.style.transform='scaleY('+v.toFixed(4)+')';
+    if(knob)knob.style.top=(v*100).toFixed(2)+'%';
+  }
+  function draw(){
+    const now=performance.now(), dt=Math.min((now-stime)/1000,.033); stime=now;
+    const done=sp.step(dt);
+    write(Math.max(0,Math.min(1,done?sp.t:sp.x)));
+    if(done){sraf=0;return}
+    sraf=requestAnimationFrame(draw);
+  }
+  function chase(p,instant){
+    if(instant||reduce){sp.to(p);sp.snap();write(p);return}
+    sp.to(p);
+    if(!sraf){stime=performance.now();sraf=requestAnimationFrame(draw)}
+  }
   function paint(){
     ticking=false;
     const vh=innerHeight||document.documentElement.clientHeight;
@@ -1477,8 +1632,8 @@ function popSticker(ev){
     if(!fill)return;
     const r=wrap.getBoundingClientRect();
     const p=Math.max(0,Math.min(1,(line-r.top)/Math.max(r.height,1)));
-    fill.style.transform='scaleY('+p.toFixed(4)+')';
-    if(knob)knob.style.top=(p*100).toFixed(2)+'%';
+    chase(p,!primed);
+    primed=true;
   }
   function onScroll(){if(!ticking){ticking=true;requestAnimationFrame(paint)}}
   addEventListener('scroll',onScroll,{passive:true});
