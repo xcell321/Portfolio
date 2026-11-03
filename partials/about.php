@@ -122,10 +122,12 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     </div>
 
     <div class="sk-card" id="skCard" role="tooltip" aria-hidden="true">
-      <p class="sk-card-title"></p>
-      <p class="sk-card-note"></p>
-      <div class="sk-card-shots"></div>
-      <p class="sk-card-foot"><?=e(token('about.skills_card_foot'))?></p>
+      <div class="sk-card-body">
+        <p class="sk-card-title"></p>
+        <p class="sk-card-note"></p>
+        <div class="sk-card-shots"></div>
+        <p class="sk-card-foot"><?=e(token('about.skills_card_foot'))?></p>
+      </div>
     </div>
     <script type="application/json" id="skCardData"><?=json_encode($skCardData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP)?></script>
   </div>
@@ -134,12 +136,12 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     <div class="kit-card kit-tools rv">
       <div class="kit-head">
         <div><p class="eyebrow"><?=e(token('about.toolkit_title'))?></p><p class="kit-note"><?=e(token('about.toolkit_note'))?> <span class="dim"><?=e(token('about.toolkit_sub'))?></span></p></div>
-        <button class="kit-tidy" type="button" onclick="tidyUp()" hidden><?=icon('rotate',14)?> <?=e(token('about.toolkit_tidy'))?></button>
+        <button class="kit-tidy" type="button" onclick="tidyUp()" aria-hidden="true" tabindex="-1"><?=icon('rotate',14)?> <?=e(token('about.toolkit_tidy'))?></button>
       </div>
       <div class="kit-arena" id="toolkit">
         <ul class="kit-chips">
           <?php
-          $slugs = ['PHP'=>'php','MySQL'=>'mysql','JavaScript'=>'javascript','Tailwind'=>'tailwindcss','Laravel'=>'laravel','Flutter'=>'flutter','Firebase'=>'firebase','Git'=>'git','Figma'=>'figma','XAMPP'=>'apache','CSS3'=>'css','HTML5'=>'html5'];
+          $slugs = ['Next.js'=>'nextdotjs','React'=>'react','TypeScript'=>'typescript','Node.js'=>'nodedotjs','Tailwind CSS'=>'tailwindcss','Laravel'=>'laravel','Flutter'=>'flutter','Firebase'=>'firebase','MySQL'=>'mysql','Python'=>'python','Vercel'=>'vercel','Figma'=>'figma'];
           foreach (token('toolkit', []) as $ti => $t): $slug = $slugs[$t] ?? ''; ?>
           <li class="tool" style="--i:<?=$ti?>"><?php if ($slug): ?><img src="https://cdn.simpleicons.org/<?=$slug?>/a8a29e" alt="" width="14" height="14" loading="lazy" onerror="this.remove()"> <?php endif; ?><?=e($t)?></li>
           <?php endforeach; ?>

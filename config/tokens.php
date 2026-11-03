@@ -85,10 +85,24 @@ return [
   'certs.verify_btn' => 'Verify on Credly',
 
   'guest.kicker' => '05 Guestbook',
-  'guest.title'  => 'Say hi. 👋',
-  'guest.form_name' => 'Name',
-  'guest.form_msg'  => 'Message',
-  'guest.form_btn'  => 'Sign guestbook',
+  'guest.title'  => 'Leave your mark on the wall.',
+  'guest.lead'   => 'Stopped by? Pin a note for me and every other visitor. It shows up on the page for everyone.',
+  'guest.form_head'  => 'Leave a note',
+  'guest.form_ph'    => 'Say hi, share feedback, or drop a kind word…',
+  'guest.form_name'  => 'Your name (optional)',
+  'guest.form_color' => 'Note color',
+  'guest.form_btn'   => 'Pin it to the wall',
+  'guest.hint'       => 'Be kind. Notes are public and may be removed.',
+  'guest.empty'      => 'the wall is empty…',
+  'guest.empty_sub'  => 'Be the first to pin a note.',
+  'guest.more'       => 'Show more notes',
+  // The one place paper colors are decided. PHP validates a submitted color against these keys
+  // and paints each note from the value, so CSS never repeats the palette.
+  'guest.papers'     => ['lime' => '#E6FBA8', 'sky' => '#BAE6FD', 'pink' => '#FBCFE8', 'peach' => '#FED7AA', 'violet' => '#DDD6FE'],
+  'guest.paper_names' => ['lime' => 'Lime', 'sky' => 'Sky', 'pink' => 'Pink', 'peach' => 'Peach', 'violet' => 'Violet'],
+  'guest.max_note'   => 160,
+  'guest.max_name'   => 24,
+  'guest.page'       => 12,
 
   'contact.kicker' => '06 Contact',
   'contact.title'  => "Let's build something together.",
@@ -108,9 +122,11 @@ return [
   'contact.ok'  => 'Thanks %s! I got your message. I\'ll reply within 1 business day. 💚',
   'contact.err' => 'Please fill in Name, Email, and Message.',
 
-  'foot.nav_label' => 'Navigate:',
+  'foot.nav_label' => 'Navigate',
+  'foot.social_label' => 'Elsewhere',
+  'foot.description' => 'From first ideas to finished products, I build web and mobile experiences with care in %s.',
   'foot.rights'    => 'All rights reserved.',
-  'foot.tickle'    => 'psst, the letters are ticklish.',
+  'foot.tickle'    => 'Go on, give the letters a nudge.',
 
   'theme.title' => 'MAKE IT YOURS',
   'theme.note'  => 'saved for your next visit',
@@ -129,7 +145,7 @@ return [
     ['Design','Figma / Design systems / UX','Interfaces, design systems and brand assets, considered end to end.','Figma'],
     ['Tooling','Git & GitHub / XAMPP / AI integrations','The everyday setup: version control, local servers, and AI in the loop.','AI integrations'],
   ],
-  'toolkit' => ['PHP','MySQL','JavaScript','Tailwind','Laravel','Flutter','Firebase','Git','Figma','XAMPP','CSS3','HTML5'],
+  'toolkit' => ['Next.js','React','TypeScript','Node.js','Tailwind CSS','Laravel','Flutter','Firebase','MySQL','Python','Vercel','Figma'],
   // One line per skill word, shown in the card that opens when you hover that word.
   // Key must match the word exactly as it is written in `skills` above.
   'tech_notes' => [

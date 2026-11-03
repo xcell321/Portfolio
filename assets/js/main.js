@@ -3,6 +3,7 @@
 var MOTION = {
   tilt:   { k:150, c:18,  m:1 },        // hero photo card
   spot:   { k:420, c:36,  m:0.6 },      // about feature cards
+  skill:  { fine:{ k:1000, c:100, m:1 }, touch:{ k:420, c:36, m:0.6 } }, // skill card follows the pointer
   card:   { k:180, c:20,  m:1, amp:4 }, // project cards
   tab:    { k:380, c:34,  m:1 },        // project tracker fill
   url:    { dur:0.25, y:6 },            // preview address chip
@@ -109,7 +110,7 @@ document.addEventListener('click',function(e){
 // floating pill nav on scroll (transparent at top, pill once scrolled) — rAF-throttled,
 // elements resolved once instead of per scroll event
 (function(){
-  const nav=document.querySelector('.nav-in'),hdr=document.querySelector('.site-header'),tt=document.getElementById('toTop');
+  const nav=document.querySelector('.nav-in'),hdr=document.querySelector('.site-header');
   let tick=false;
   function apply(){
     tick=false;
@@ -117,7 +118,6 @@ document.addEventListener('click',function(e){
     // nav starts fully transparent, becomes the pill only after scrolling >24px
     if(nav&&!nav.classList.contains('force-pill'))nav.classList.toggle('scrolled',y>24);
     if(hdr)hdr.classList.toggle('scrolled',y>40);
-    if(tt)tt.classList.toggle('show',y>600);
   }
   addEventListener('scroll',()=>{if(!tick){tick=true;requestAnimationFrame(apply)}},{passive:true});
   apply();   // mid-page reloads skip the scroll event, so paint the state immediately
@@ -221,10 +221,14 @@ function toggleNav(){
   addEventListener('load',()=>{if(active)place(active)});
   paint();
 })();
-// skills: accordion (one row at a time) + hover a word for its card, click to pin it
+// skills: accordion (one row at a time) + hover a word for its card, click to pin it.
+// Reference hover states: only the hovered/pinned word stays accent; every sibling dims to
+// stone-700 and the separators go stone-800. The card enters at .92 scale / -2deg, follows the
+// pointer on a 1000/100 spring (420/36/.6 on touch), and swaps its body with a .15s y-shift.
 (function(){
   const rows=[...document.querySelectorAll('#about .sk-row')];
   const words=[...document.querySelectorAll('#about .sk-word')];
+  const wordBoxes=[...document.querySelectorAll('#about .sk-words')];
   rows.forEach(r=>{
     const b=r.querySelector('.sk-head-btn');if(!b)return;
     b.addEventListener('click',()=>{
@@ -240,19 +244,30 @@ function toggleNav(){
   try{data=JSON.parse(src.textContent)}catch(e){return}
   if(!data)return;
   // .sk-body clips (overflow:hidden + max-height) and the reveal writes a transform, so the
-  // card cannot live under the word. It is portalled to <body> and positioned from the rect.
+  // card cannot live under the word. It is portalled to <body> and positioned from the pointer.
   document.body.appendChild(card);
+  const body=card.querySelector('.sk-card-body');
+  if(!body)return;
   const title=card.querySelector('.sk-card-title'), note=card.querySelector('.sk-card-note'), shots=card.querySelector('.sk-card-shots');
-  const OFF=22, EDGE=12;                 // reference anchors the card word-centre +22/+22
-  let pinned=null, shown=null, hideT=0;
+  const OFF=22, EDGE=12;
+  const fine=matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const SP=fine?MOTION.skill.fine:MOTION.skill.touch;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sx=spring(SP.k,SP.c,SP.m), sy=spring(SP.k,SP.c,SP.m);
+  let pinned=null, hovered=null, shown=null, hideT=0, closeT=0, bodySeq=0;
+  let raf=0,last=0,px=-999,py=-999;
 
-  function place(w){
-    const r=w.getBoundingClientRect(), b=card.getBoundingClientRect();
-    const x=Math.min(r.left+r.width/2+OFF, innerWidth-b.width-EDGE);
-    const y=Math.min(r.top+r.height/2+OFF, innerHeight-b.height-EDGE);
-    card.style.left=Math.max(EDGE,x)+'px'; card.style.top=Math.max(EDGE,y)+'px';
+  function active(){ return hovered||pinned }
+  function sync(){
+    const a=active();
+    wordBoxes.forEach(b=>b.classList.toggle('is-active',!!a));
+    words.forEach(w=>{
+      const on=w===pinned;
+      w.classList.toggle('on',on);
+      w.setAttribute('aria-expanded',on?'true':'false');
+    });
   }
-  function fill(word){
+  function render(word){
     const d=data[word]; if(!d)return false;
     title.textContent=word; note.textContent=d.note||'';
     shots.textContent='';
@@ -269,41 +284,155 @@ function toggleNav(){
     });
     return true;
   }
-  function show(w){
-    if(!fill(w.dataset.tech))return;
-    shown=w; card.classList.add('open'); card.setAttribute('aria-hidden','false');
-    w.setAttribute('aria-describedby','skCard'); place(w);
+  function write(){ card.style.translate=sx.x.toFixed(2)+'px '+sy.x.toFixed(2)+'px' }
+  function frame(now){
+    if(!last)last=now;
+    const dt=Math.min((now-last)/1000,.033); last=now;
+    const dx=sx.step(dt), dy=sy.step(dt);
+    write();
+    if(dx&&dy){last=0;raf=0;write();return}
+    raf=requestAnimationFrame(frame);
+  }
+  function target(x,y){
+    const w=card.offsetWidth||288, h=card.offsetHeight||190;
+    const tx=x+OFF+w>innerWidth?x-OFF-w:x+OFF;
+    const ty=y+OFF+h>innerHeight?y-OFF-h:y+OFF;
+    return {
+      x:Math.max(EDGE,Math.min(tx,innerWidth-w-EDGE)),
+      y:Math.max(EDGE,Math.min(ty,innerHeight-h-EDGE))
+    };
+  }
+  function moveTo(x,y,jump){
+    const t=target(x,y);
+    if(jump||px===-999){
+      sx.to(t.x);sy.to(t.y);sx.snap();sy.snap();write();
+    }else{
+      sx.to(t.x);sy.to(t.y);
+      if(!raf){last=0;raf=requestAnimationFrame(frame)}
+    }
+    px=x;py=y;
+  }
+  function placeWord(w,jump){ const r=w.getBoundingClientRect(); moveTo(r.left+r.width/2,r.top+r.height/2,jump) }
+  function openCard(){
+    if(closeT){clearTimeout(closeT);closeT=0}
+    card.classList.remove('closing');
+    card.classList.add('open');
+    card.setAttribute('aria-hidden','false');
+  }
+  function closeCard(){
+    if(closeT){clearTimeout(closeT);closeT=0}
+    card.classList.remove('open');
+    card.classList.add('closing');
+    card.setAttribute('aria-hidden','true');
+    body.getAnimations().forEach(a=>a.cancel());
+    bodySeq++;
+    if(reduce){card.classList.remove('closing');return}
+    closeT=setTimeout(()=>{closeT=0;if(!card.classList.contains('open'))card.classList.remove('closing')},230);
+  }
+  function swapBody(word){
+    const seq=++bodySeq;
+    if(reduce||!card.classList.contains('open')){render(word);return}
+    body.getAnimations().forEach(a=>a.cancel());
+    const out=body.animate([
+      {opacity:1,transform:'translateY(0)'},
+      {opacity:0,transform:'translateY(-4px)'}
+    ],{duration:150,easing:'cubic-bezier(.22,1,.36,1)',fill:'forwards'});
+    out.onfinish=()=>{
+      if(seq!==bodySeq)return;
+      out.cancel();
+      render(word);
+      const inn=body.animate([
+        {opacity:0,transform:'translateY(4px)'},
+        {opacity:1,transform:'translateY(0)'}
+      ],{duration:150,easing:'cubic-bezier(.22,1,.36,1)'});
+      inn.onfinish=()=>{if(seq===bodySeq)inn.cancel()};
+    };
+  }
+  function show(w,e){
+    const word=w.dataset.tech;
+    hovered=w; sync();
+    if(!data[word])return;
+    const isOpen=card.classList.contains('open');
+    if(!isOpen){
+      if(!render(word))return;
+      shown=w; openCard();
+    }else if(shown!==w){
+      shown=w; swapBody(word);
+    }
+    w.setAttribute('aria-describedby','skCard');
+    if(e&&e.pointerType==='mouse')moveTo(e.clientX,e.clientY,!isOpen||px===-999);
+    else placeWord(w,!isOpen||px===-999);
   }
   function hide(){
-    card.classList.remove('open'); card.setAttribute('aria-hidden','true');
+    if(!card.classList.contains('open')&&!card.classList.contains('closing'))return;
     if(shown)shown.removeAttribute('aria-describedby');
     shown=null;
+    closeCard();
   }
   function leave(){ if(hideT)clearTimeout(hideT); hideT=setTimeout(()=>{hideT=0;if(!pinned)hide()},120) }
   // a pinned word whose row just closed is gone; drop the pin with it
-  function guard(){ if(shown&&!shown.getClientRects().length){pinned=null;hide()} else if(pinned&&!pinned.getClientRects().length)pinned=null; }
-  const reflow=()=>{ guard(); if(shown)place(shown) };
-  addEventListener('scroll',reflow,{passive:true});
-  addEventListener('resize',reflow);
+  function guard(){
+    if(shown&&!shown.getClientRects().length){pinned=null;hovered=null;sync();hide()}
+    else if(pinned&&!pinned.getClientRects().length){pinned=null;sync()}
+  }
+  addEventListener('scroll',guard,{passive:true});
+  addEventListener('resize',guard);
 
   words.forEach(w=>{
-    if(!data[w.dataset.tech])return;
-    w.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'){if(hideT)clearTimeout(hideT);show(w)}});
-    w.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&w!==pinned)leave()});
-    w.addEventListener('focus',()=>show(w));
-    w.addEventListener('blur',()=>{if(w!==pinned)hide()});
+    w.addEventListener('pointerenter',e=>{
+      if(e.pointerType!=='mouse')return;
+      if(hideT){clearTimeout(hideT);hideT=0}
+      show(w,e);
+    });
+    w.addEventListener('focus',()=>{if(hideT){clearTimeout(hideT);hideT=0}show(w)});
+    w.addEventListener('blur',()=>{
+      if(hovered===w)hovered=null;
+      sync();
+      if(w!==pinned)leave();
+    });
     w.addEventListener('click',()=>{
-      const on=w.classList.contains('on');
-      words.forEach(o=>{o.classList.remove('on');o.setAttribute('aria-expanded','false')});
-      if(on){ pinned=null; hide(); return; }
-      if(!shown||shown!==w)show(w);
-      if(!card.classList.contains('open'))return;   // word had no card: pin state is meaningless
-      w.classList.add('on'); w.setAttribute('aria-expanded','true'); pinned=w;
+      const t=w.dataset.tech;
+      if(!data[t])return;
+      const wasPinned=pinned===w;
+      pinned=wasPinned?null:w;
+      hovered=w; sync();
+      if(pinned){
+        const isOpen=card.classList.contains('open');
+        if(!isOpen){render(t);shown=w;openCard();placeWord(w,!isOpen||px===-999)}
+        else if(shown!==w){shown=w;swapBody(t)}
+        w.setAttribute('aria-describedby','skCard');
+      }
     });
   });
+  const region=document.querySelector('#about .sk');
+  if(region)region.addEventListener('pointermove',e=>{
+    if(e.pointerType!=='mouse'||!shown)return;
+    moveTo(e.clientX,e.clientY,false);
+  });
+  const rowsWrap=document.querySelector('#about .sk-rows');
+  if(rowsWrap)rowsWrap.addEventListener('pointerleave',e=>{
+    if(card.contains(e.relatedTarget))return;
+    if(hovered){hovered=null;sync()}
+    if(pinned){
+      if(shown!==pinned){
+        shown=pinned;
+        if(card.classList.contains('open'))swapBody(pinned.dataset.tech);
+        else{render(pinned.dataset.tech);openCard()}
+      }
+    }else leave();
+  });
   // hover-intent: crossing from the word onto the card keeps it open so the shot is clickable
-  card.addEventListener('pointerenter',()=>{if(hideT)clearTimeout(hideT)});
-  card.addEventListener('pointerleave',()=>{if(!pinned)leave()});
+  card.addEventListener('pointerenter',()=>{if(hideT){clearTimeout(hideT);hideT=0}});
+  card.addEventListener('pointerleave',e=>{
+    if(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('.sk-word'))return;
+    if(hovered){hovered=null;sync()}
+    if(pinned){
+      if(shown!==pinned){
+        shown=pinned;
+        if(card.classList.contains('open'))swapBody(pinned.dataset.tech);
+      }
+    }else leave();
+  });
 })();
 // feature cards: spotlight glow follows the cursor; tilt is a spring, and only on a wide fine pointer
 (function(){
@@ -355,16 +484,17 @@ function syncChips(box){
 function tidyUp(){
   const box=document.getElementById('toolkit');if(!box)return;
   const ul=box.querySelector('.kit-chips')||box;
-  ul.classList.add('tidy');
   [...ul.children].forEach(n=>{
     if(n._kitRaf){cancelAnimationFrame(n._kitRaf);n._kitRaf=0}
     n.classList.remove('dragging');
     n.style.setProperty('--tx','0px');
     n.style.setProperty('--ty','0px');
+    n.style.animation='none';
+    void n.offsetWidth;
+    n.style.removeProperty('animation');
   });
-  const btn=document.querySelector('.kit-tidy');if(btn)btn.hidden=true;
-  setTimeout(()=>ul.classList.remove('tidy'),420);
-  toast('Tidy!');
+  const btn=document.querySelector('.kit-tidy');
+  if(btn){btn.classList.remove('on');btn.setAttribute('aria-hidden','true');btn.tabIndex=-1}
 }
 (function(){
   const box=document.getElementById('toolkit');if(!box)return;
@@ -386,7 +516,6 @@ function tidyUp(){
     }
     chip.addEventListener('pointerdown',e=>{
       if(e.button!==0)return;
-      ul.classList.remove('tidy');
       active=true;moved=false;sx=e.clientX;sy=e.clientY;
       if(chip._kitRaf){cancelAnimationFrame(chip._kitRaf);chip._kitRaf=0}
       const r=chip.getBoundingClientRect(),a=box.getBoundingClientRect();
@@ -401,7 +530,7 @@ function tidyUp(){
     chip.addEventListener('pointermove',e=>{
       if(!active)return;
       const dx=e.clientX-sx,dy=e.clientY-sy;
-      if(!moved&&(Math.abs(dx)>3||Math.abs(dy)>3)){moved=true;if(btn)btn.hidden=false}
+      if(!moved&&(Math.abs(dx)>3||Math.abs(dy)>3)){moved=true;if(btn){btn.classList.add('on');btn.setAttribute('aria-hidden','false');btn.tabIndex=0}}
       const el=.15;
       let ax=dx,ay=dy;
       if(ax<minX)ax=minX+(ax-minX)*el;else if(ax>maxX)ax=maxX+(ax-maxX)*el;
@@ -848,8 +977,6 @@ function setDuty(on){
   mq.addEventListener&&mq.addEventListener('change',e=>{active=e.matches;measure();last='';onScroll()});
   apply();
 })();
-// back to top — lenis-aware: duration 1.1, same as the anchor helper
-function toTop(){const l=window.lenis;if(l&&l.scrollTo){l.scrollTo(0,{duration:1.1})}else{scrollTo({top:0,behavior:'smooth'})}}
 function toast(m,action){const t=document.getElementById('toast');if(!t)return;t.innerHTML='';t.append(document.createTextNode(m));if(action&&action.label){const b=document.createElement('button');b.type='button';b.className='toast-act';b.textContent=action.label;b.onclick=()=>{t.classList.remove('show');if(action.fn)action.fn()};t.append(b)}t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
 // ---- sound effects toggle:
 // single speaker button, default OFF (volume-x), click = ON (volume) / OFF.
@@ -1642,13 +1769,32 @@ function popSticker(ev){
   if(!wrap||!list)return;
   const items=[...list.querySelectorAll('.tl-item')];
   if(!items.length)return;
+  const years=items.map(el=>el.querySelector('.tl-year')).filter(Boolean);
   const fill=document.getElementById('tlFill');
   const knob=document.getElementById('tlKnob');
   const now=document.getElementById('journeyNow');
+  const stage=now?now.parentElement:null;
   const dots=[...document.querySelectorAll('#journeyDots span')];
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   let active=-1,ticking=false;
-  function setActive(i){
+  // Reference year swap: outgoing slides up while the incoming slides in from below,
+  // both 500ms on cubic-bezier(.22,1,.36,1). The clone lets both run at once.
+  function swapYear(y){
+    if(!stage)return;
+    stage.querySelectorAll('.journey-now-year.swap-out').forEach(el=>el.remove());
+    const old=now.cloneNode(true);
+    old.removeAttribute('id');
+    old.classList.remove('swap');
+    old.classList.add('swap-out');
+    old.setAttribute('aria-hidden','true');
+    stage.appendChild(old);
+    now.textContent=y;
+    now.classList.remove('swap','swap-out');
+    void now.offsetWidth;
+    now.classList.add('swap');
+    old.addEventListener('animationend',()=>old.remove(),{once:true});
+  }
+  function setActive(i,instant){
     if(i===active)return;
     active=i;
     items.forEach((el,n)=>{
@@ -1658,17 +1804,26 @@ function popSticker(ev){
     });
     dots.forEach((d,n)=>d.classList.toggle('on',n===i));
     if(!now)return;
-    const y=items[i].dataset.year||'';
-    if(now.textContent===y)return;
-    now.textContent=y;
-    if(reduce)return;
-    now.classList.remove('swap');
-    void now.offsetWidth;
-    now.classList.add('swap');
+    const y=(years[i]?.textContent||'').trim();
+    if(y===''||now.textContent===y)return;
+    if(reduce||instant){now.textContent=y;return}
+    swapYear(y);
   }
-  // The rail lags the scroll instead of tracking it 1:1: raw progress feeds a spring (120/30),
-  // which is what the CSS .18s linear transition used to approximate. It snaps on first paint and
-  // settles exactly on the true value, so the rail never lands short.
+  setActive(0,true);
+  // Reference uses IntersectionObserver with a 5%-tall viewport band at 45–50%.
+  if('IntersectionObserver' in window){
+    const io=new IntersectionObserver(es=>{
+      es.forEach(en=>{
+        if(!en.isIntersecting)return;
+        const i=Number(en.target.dataset.entry);
+        if(Number.isInteger(i))setActive(i);
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    years.forEach(y=>io.observe(y));
+  }
+  // Progress runs from the list start hitting viewport center to its end hitting viewport center;
+  // raw progress feeds the reference spring (120/30/.001). Snap on first paint so the rail never
+  // lands short, then settle exactly on the true value.
   const P=MOTION.tl, sp=spring(P.k,P.c,P.m,P.rest);
   let sraf=0,stime=0,primed=false;
   function write(v){
@@ -1689,14 +1844,10 @@ function popSticker(ev){
   }
   function paint(){
     ticking=false;
-    const vh=innerHeight||document.documentElement.clientHeight;
-    const line=Math.min(150,vh*.3);
-    let i=0;
-    items.forEach((el,n)=>{if(el.getBoundingClientRect().top<=line)i=n});
-    setActive(i);
     if(!fill)return;
-    const r=wrap.getBoundingClientRect();
-    const p=Math.max(0,Math.min(1,(line-r.top)/Math.max(r.height,1)));
+    const vh=innerHeight||document.documentElement.clientHeight;
+    const r=list.getBoundingClientRect();
+    const p=Math.max(0,Math.min(1,((vh*.5)-r.top)/Math.max(r.height,1)));
     chase(p,!primed);
     primed=true;
   }

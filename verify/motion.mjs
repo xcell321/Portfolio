@@ -526,6 +526,82 @@ async function checkSite(url) {
   return d;
 }
 
+async function checkFooter(url) {
+  const { ev, send, close } = await open(url);
+  try {
+    const content = await ev(`() => {
+      const f = document.querySelector('footer');
+      return { id: f?.id, text: f?.textContent, name: document.getElementById('bigName')?.textContent.replace(/\\s+/g, ' '),
+        nav: [...document.querySelectorAll('footer nav a')].map(a => ({ id: a.hash.slice(1), label: a.textContent.trim(), exists: !!document.querySelector(a.hash) })),
+        socials: [...document.querySelectorAll('.footer-socials a')].map(a => ({ href: a.href, name: a.textContent.trim(), safe: a.target === '_blank' && a.relList.contains('noopener') })),
+        email: document.querySelector('.footer-email')?.getAttribute('href'), palette: window.PAL };
+    }`);
+    check('F1 footer is a screenshot target', content.id === 'footer');
+    check('F2 footer uses owner identity', content.name === 'EDSIEL URSAL' && !/Mike|Quezon|Dribbble/i.test(content.text));
+    check('F3 footer navigation matches palette and real sections', content.nav.length === 6 && content.nav.every((n, i) => n.exists && n.id === content.palette.nav[i].id && n.label === content.palette.nav[i].label));
+    check('F4 owner socials match palette and open safely', content.socials.length === 3 && content.socials.every((s, i) => s.safe && s.href === content.palette.socials[i].href && s.name === content.palette.socials[i].name));
+    check('F5 email uses configured address', content.email === 'mailto:' + content.palette?.email);
+
+    for (const width of [1440, 1278, 1024, 1023, 768, 767, 640, 639, 390, 320]) {
+      await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: false });
+      const d = await ev(`async () => {
+        await document.fonts.ready;
+        const f = document.querySelector('footer'), g = f.querySelector('.footer-grid'), b = document.getElementById('bigName');
+        const s = e => e ? getComputedStyle(e) : null;
+        const wrap = f.querySelector('.wrap'), heading = f.querySelector('.footer-heading'), link = f.querySelector('nav a'), note = f.querySelector('.footer-note');
+        const letters = [...b.children].map(e => e.getBoundingClientRect());
+        return { top: s(f).paddingTop, bottom: s(f).paddingBottom, bg: s(f).backgroundColor, border: s(f).borderTopColor,
+          cols: s(g)?.gridTemplateColumns.split(' ').length, gap: s(g)?.gap, gridHeight: g?.getBoundingClientRect().height,
+          wrap: wrap.getBoundingClientRect().width, inset: s(wrap).paddingLeft,
+          size: parseFloat(s(b).fontSize), line: parseFloat(s(b).lineHeight), space: parseFloat(s(b).letterSpacing), font: s(b).fontFamily,
+          margin: s(b).marginTop, ink: s(b.children[0]).color,
+          heading: heading && [s(heading).fontSize, s(heading).lineHeight, s(heading).letterSpacing, s(heading).textTransform],
+          link: link && [s(link).fontSize, s(link).lineHeight, s(link).color],
+          note: note && [s(note).marginTop, s(note).fontSize, s(note).lineHeight],
+          fits: letters.at(-1).right <= b.getBoundingClientRect().right + 1,
+          overflow: f.scrollWidth > f.clientWidth };
+      }`);
+      const size = width >= 1024 ? 160 : width * .13;
+      check('F6 responsive footer layout @' + width, d.cols === (width >= 768 ? 3 : 1) && d.gap === '48px' && d.top === '64px' && d.bottom === (width >= 640 ? '48px' : '112px'), JSON.stringify(d));
+      check('F7 container and wordmark metrics @' + width, near(d.wrap, Math.min(width, 1152), 1) && d.inset === (width >= 640 ? '32px' : '20px') && near(d.size, size, .1) && near(d.line, size * 1.5, .1) && near(d.space, -size * .05, .1) && d.margin === '64px' && d.font.includes('Bricolage'), JSON.stringify(d));
+      check('F8 footer fits without clipping @' + width, d.fits && !d.overflow, JSON.stringify(d));
+      if (width === 1440) {
+        check('F9 reference surface and typography', d.bg === 'rgba(0, 0, 0, 0)' && d.border === 'rgba(255, 255, 255, 0.06)' && near(d.gridHeight, 226, 1) && d.ink === 'rgb(212, 253, 115)' && JSON.stringify(d.heading) === JSON.stringify(['12px', '16px', '2.16px', 'uppercase']) && JSON.stringify(d.link) === JSON.stringify(['14px', '22px', 'rgb(168, 162, 158)']) && JSON.stringify(d.note) === JSON.stringify(['16px', '12px', '16px']), JSON.stringify(d));
+      }
+    }
+
+    await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+    const point = await ev(`async () => {
+      window.lenis?.stop(); document.documentElement.style.scrollBehavior = 'auto';
+      const b = document.getElementById('bigName'); b.scrollIntoView({block: 'center'});
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const r = b.children[0].getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }`);
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
+    const motion = await ev(`() => { const e = document.querySelector('#bigName span'); return { poked: e.classList.contains('poked'), durations: e.getAnimations().filter(a => a.effect.getKeyframes().some(k => k.transform)).map(a => a.effect.getTiming().duration) }; }`);
+    check('F10 letter hover retains tickle behavior', motion.poked && (REDUCED ? motion.durations.length === 0 : motion.durations.includes(600)), JSON.stringify(motion));
+    await ev(`() => { document.documentElement.style.setProperty('--acc', '#7dd3fc'); }`);
+    await new Promise(r => setTimeout(r, 550));
+    check('F11 wordmark follows selected accent', await ev(`() => getComputedStyle(document.querySelector('#bigName span')).color`) === 'rgb(125, 211, 252)');
+
+    const linkPoint = await ev(`async () => {
+      const a = document.querySelector('footer nav a'); if (!a) return null;
+      a.focus(); a.scrollIntoView({block: 'center'});
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const r = a.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, focused: document.activeElement === a };
+    }`);
+    check('F12 footer navigation can receive keyboard focus', linkPoint?.focused === true);
+    if (linkPoint) {
+      await ev(`() => { window.lenis?.start(); }`);
+      await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+      await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+      await new Promise(r => setTimeout(r, 1400));
+      check('F13 keyboard navigation reaches About', await ev(`() => Math.abs(document.getElementById('about').getBoundingClientRect().top) < 120`));
+    }
+    check('F14 existing overlays remain mounted', await ev(`() => ['aiWidget', 'handPanel', 'pal'].every(id => !!document.getElementById(id))`));
+  } finally { close(); }
+}
+
 async function shot(url, outDir, sections, hover) {
   const { ev, send, close } = await open(url);
   mkdirSync(outDir, { recursive: true });
@@ -570,8 +646,9 @@ if (mode === 'dump') {
   const a = JSON.parse(readFileSync(args[1], 'utf8'));
   const b = JSON.parse(readFileSync(args[2], 'utf8'));
   diff(a, b);
-} else if (mode === 'check') {
-  await checkSite(urlArg || MINE);
+} else if (mode === 'check' || mode === 'footer') {
+  if (mode === 'footer') await checkFooter(urlArg || MINE);
+  else await checkSite(urlArg || MINE);
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 } else if (mode === 'shot') {
@@ -579,6 +656,6 @@ if (mode === 'dump') {
   await shot(urlArg || MINE, args.find(a => a.startsWith('--out='))?.split('=')[1] || '.tmpshots', secs,
     args.find(a => a.startsWith('--hover='))?.split('=')[1]);
 } else {
-  console.log('usage: node verify/motion.mjs dump <url> [--out=f.json] | diff a.json b.json | check [url] [--reduced] | shot [url] [--sections=a,b] [--hover=PHP] [--out=dir]');
+  console.log('usage: node verify/motion.mjs dump <url> [--out=f.json] | diff a.json b.json | check [url] [--reduced] | footer [url] [--reduced] | shot [url] [--sections=a,b] [--hover=PHP] [--out=dir]');
   process.exit(2);
 }

@@ -95,6 +95,25 @@ function ext(string $url): string {
 }
 
 /**
+ * How long ago a note was pinned, in the short form a note wall reads:
+ * just now, 5m ago, 3h ago, 12d ago, then a plain "Nov 3" once it is older than a month.
+ */
+function time_ago(string $when, ?int $now = null): string {
+  $ts = strtotime($when);
+  if ($ts === false) return '';
+  $now = $now ?? time();
+  $s = max(1, $now - $ts);
+  if ($s < 60) return 'just now';
+  $m = (int) round($s / 60);
+  if ($m < 60) return $m . 'm ago';
+  $h = (int) round($m / 60);
+  if ($h < 24) return $h . 'h ago';
+  $d = (int) round($h / 24);
+  if ($d < 30) return $d . 'd ago';
+  return date('M j', $ts);
+}
+
+/**
  * Two-tone section title:
  * first words plain, last N words dim (stone-500).
  * e.g. split_title('One partner, from concept to shipped release.', 3)

@@ -58,8 +58,11 @@ CREATE TABLE IF NOT EXISTS guestbook (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   message TEXT NOT NULL,
+  color VARCHAR(12) NOT NULL DEFAULT 'lime',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+-- Idempotent for installs that already have the table (CREATE IF NOT EXISTS skips the body).
+ALTER TABLE guestbook ADD COLUMN IF NOT EXISTS color VARCHAR(12) NOT NULL DEFAULT 'lime' AFTER message;
 
 CREATE TABLE IF NOT EXISTS site_likes (
   id INT PRIMARY KEY DEFAULT 1,

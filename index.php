@@ -43,9 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gbook'])) {
   if (!csrf_ok()) { http_response_code(403); exit('Forbidden'); }
   if (($_SESSION['last_gbook'] ?? 0) > time() - 30) { http_response_code(429); exit('Too many requests'); }
-  $gname = mb_substr(trim($_POST['gname'] ?? ''), 0, 100);
-  $gmsg  = mb_substr(trim($_POST['gmsg'] ?? ''), 0, 2000);
-  if (save_guestbook($pdo, $gname, $gmsg)) $_SESSION['last_gbook'] = time();
+  $gname = mb_substr(trim($_POST['gname'] ?? ''), 0, (int)token('guest.max_name'));
+  $gmsg  = mb_substr(trim($_POST['gmsg'] ?? ''), 0, (int)token('guest.max_note'));
+  // Papers are a closed set: anything outside the palette lands on the first one.
+  $papers = array_keys((array)token('guest.papers'));
+  $gcolor = in_array($_POST['gcolor'] ?? '', $papers, true) ? (string)$_POST['gcolor'] : $papers[0];
+  // `website` is a honeypot no human fills. A bot gets the same redirect as anyone else,
+  // so it learns nothing, and its note never reaches the wall.
+  $human = trim((string)($_POST['website'] ?? '')) === '';
+  if ($human && mb_strlen($gmsg) >= 2 && save_guestbook($pdo, $gname, $gmsg, $gcolor)) $_SESSION['last_gbook'] = time();
   header('Location: #guestbook');
   exit;
 }
