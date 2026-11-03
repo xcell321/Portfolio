@@ -241,7 +241,7 @@ async function checkSite(url) {
     if (!skSetup.err) {
       const pos = await ev(`() => { const w=[...document.querySelectorAll('.sk-word')].find(e=>e.dataset.tech==="PHP"); const r=w.getBoundingClientRect(); return {x:Math.round(r.x+r.width/2), y:Math.round(r.y+r.height/2)}; }`);
       await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: pos.x, y: pos.y });
-      await wait(150);
+      await wait(320);
       const open = await ev(`() => {
         const c = document.getElementById('skCard'), s = getComputedStyle(c), r = c.getBoundingClientRect();
         const fr = c.querySelector('.sk-card-frame'), img = fr && fr.querySelector('img'), lab = c.querySelector('.sk-card-label');
@@ -249,7 +249,7 @@ async function checkSite(url) {
         const ns = note && getComputedStyle(note), fs = foot && getComputedStyle(foot);
         return { disp: s.display, x: Math.round(r.x), y: Math.round(r.y), w: +r.width.toFixed(1), h: +r.height.toFixed(1),
           vh: innerHeight, vw: innerWidth, rad: s.borderRadius,
-          bg: s.backgroundColor, pad: s.padding, trdur: s.transitionDuration, anim: s.animationName,
+          bg: s.backgroundColor, pad: s.padding, trdur: s.transitionDuration, animDur: s.animationDuration, anim: s.animationName,
           title: (c.querySelector('.sk-card-title') || {}).textContent,
           note: note && note.textContent, noteFs: ns && ns.fontSize, noteLh: ns && ns.lineHeight,
           frames: c.querySelectorAll('.sk-card-frame').length,
@@ -258,12 +258,23 @@ async function checkSite(url) {
           label: lab && lab.textContent, foot: foot && foot.textContent,
           footFs: fs && fs.fontSize, footLs: fs && fs.letterSpacing, footTt: fs && fs.textTransform, footFf: fs && fs.fontFamily.split(',')[0] };
       }`);
+      const exX = Math.max(12, Math.min(pos.x + 22 + open.w > open.vw ? pos.x - 22 - open.w : pos.x + 22, open.vw - open.w - 12));
+      const exY = Math.max(12, Math.min(pos.y + 22 + open.h > open.vh ? pos.y - 22 - open.h : pos.y + 22, open.vh - open.h - 12));
       check('S2 real hover opens the card at the measured geometry',
         open.disp !== 'none' && open.w === 288 && open.rad === '16px' && open.bg === 'rgba(23, 23, 23, 0.95)' && open.pad === '16px'
-        && Math.abs(open.x - Math.min(pos.x + 22, open.vw - open.w - 12)) <= 4
-        && Math.abs(open.y - Math.min(pos.y + 22, open.vh - open.h - 12)) <= 4, JSON.stringify(open));
-      check('S2b no entrance animation (reference mounts in one frame)',
-        open.trdur === '0s' && (open.anim === 'none' || open.anim === ''), open.trdur + '/' + open.anim);
+        && Math.abs(open.x - exX) <= 4 && Math.abs(open.y - exY) <= 4, JSON.stringify({ ...open, pos, exX, exY }));
+      check('S2b reference card entrance .22s scale/rotate',
+        open.animDur === '0.22s' && open.anim === 'skIn', open.animDur + '/' + open.anim);
+      const states = await ev(`() => {
+        const w = [...document.querySelectorAll('.sk-word')].find(e => e.dataset.tech === "PHP");
+        const other = w.parentElement.querySelector('.sk-word:not([data-tech="PHP"])');
+        const sep = w.parentElement.querySelector('.sk-sep');
+        return { word: getComputedStyle(w).color, other: other && getComputedStyle(other).color,
+          sep: sep && getComputedStyle(sep).color, transform: getComputedStyle(w).transform };
+      }`);
+      check('S2c hovered word accent, siblings stone-700, separators stone-800, no lift',
+        states.word === 'rgb(212, 253, 115)' && states.other === 'rgb(68, 64, 60)'
+        && states.sep === 'rgb(41, 37, 36)' && states.transform === 'none', JSON.stringify(states));
       check('S3 shots come from project tags and link to the live site',
         open.frames >= 1 && open.tag === 'A' && /^https?:/.test(open.href || '') && open.target === '_blank'
         && /16\s*\/\s*10/.test(open.ar || '') && /Remotee/.test(open.label || ''), JSON.stringify(open));
@@ -285,7 +296,7 @@ async function checkSite(url) {
       await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: pos.x, y: pos.y, button: 'left', clickCount: 1 });
       await wait(120);
       await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5 });
-      await wait(200);
+      await wait(500);
       const unpinned = await ev(`() => ({ disp: getComputedStyle(document.getElementById('skCard')).display,
         on: !!document.querySelector('.sk-word.on') })`);
       check('S4b second click unpins and closes', unpinned.disp === 'none' && !unpinned.on, JSON.stringify(unpinned));
@@ -405,6 +416,84 @@ async function checkSite(url) {
     // G8 year swap duration
     const yd = await ev(`() => { for (const ss of document.styleSheets) { try { for (const r of ss.cssRules) { if (r.selectorText && r.selectorText.includes('.journey-now-year.swap')) return r.style.animationDuration || r.cssText; } } catch(e){} } return null; }`);
     check('G8 journeyYear duration .5s', String(yd).trim() === '0.5s', 'rule ' + yd);
+
+    // G9 guestbook: the form is one paper note, the entries hang beside it in a column wall.
+    // Row-dependent checks SKIP when the database holds no notes, the same way G6 does.
+    const PAPER = { lime: 'rgb(230, 251, 168)', sky: 'rgb(186, 230, 253)', pink: 'rgb(251, 207, 232)',
+                    peach: 'rgb(254, 215, 170)', violet: 'rgb(221, 214, 254)' };
+    const readWall = `() => {
+      const sec = document.getElementById('guestbook');
+      if (!sec) return { missing: 'no #guestbook' };
+      const q = s => sec.querySelector(s);
+      const form = q('.gb-form'), board = q('.gb-wall'), ta = q('.gb-form textarea');
+      const chips = [...sec.querySelectorAll('.gb-chip')], note = q('.gb-wall .guest');
+      const cs = el => (el ? getComputedStyle(el) : null);
+      const fb = form?.getBoundingClientRect(), bb = board?.getBoundingClientRect();
+      return {
+        twoCol: !!(fb && bb) && fb.width > 80 && bb.width > 80 && bb.left >= fb.right - 1,
+        sticky: cs(form)?.position === 'sticky',
+        columns: cs(board)?.columnCount,
+        paper: cs(form)?.backgroundColor,
+        chipCount: chips.length,
+        checked: chips.filter(c => c.getAttribute('aria-checked') === 'true').length,
+        maxLen: ta?.getAttribute('maxlength'),
+        hand: cs(ta)?.fontFamily.includes('Caveat') ?? false,
+        counter: q('.gb-count')?.textContent.trim() ?? null,
+        honey: !!q('.gb-form [name="website"]'),
+        hint: q('.gb-hint')?.textContent.trim() ?? null,
+        note: note ? { bg: cs(note).backgroundColor, ink: cs(note).color,
+          hand: cs(note.querySelector('.gb-note-text') ?? note).fontFamily.includes('Caveat'),
+          key: note.dataset.paper ?? null,
+          time: note.querySelector('time')?.textContent.trim() ?? null,
+          dt: note.querySelector('time')?.getAttribute('datetime') ?? null } : null,
+        empty: q('.gb-empty')?.textContent.trim() ?? null,
+        more: q('.gb-more')?.textContent.trim() ?? null,
+        shown: sec.querySelectorAll('.gb-wall .guest:not([hidden])').length,
+        total: sec.querySelectorAll('.gb-wall .guest').length,
+      }; }`;
+    let w = await ev(readWall);
+    check('G9 note form and note wall sit side by side', !w.missing && w.twoCol === true, JSON.stringify(w.missing ?? { twoCol: w.twoCol, paper: w.paper }));
+    check('G9 form note stays pinned while the wall scrolls', w.sticky === true, 'position ' + w.sticky);
+    check('G9 wall lays out in columns at desktop width', +w.columns >= 2, 'column-count ' + w.columns);
+    check('G9 the form is paper, not the dark card', Object.values(PAPER).includes(w.paper), 'bg ' + w.paper);
+    check('G9 five paper chips, exactly one checked', w.chipCount === 5 && w.checked === 1, JSON.stringify([w.chipCount, w.checked]));
+    check('G9 note text capped at 160 with a live counter', w.maxLen === '160' && /^\d+\s*\/\s*160$/.test(w.counter || ''), JSON.stringify([w.maxLen, w.counter]));
+    check('G9 note text is handwritten (Caveat)', w.hand === true, 'font ' + w.hand);
+    check('G9 honeypot field guards the form', w.honey === true);
+    check('G9 the wall says notes are public', /public/.test(w.hint || ''), w.hint);
+    check('G9 empty wall invites the first note', (w.note ? w.empty === null : /empty/.test(w.empty || '')) , JSON.stringify([w.empty, w.note]));
+
+    // picking a chip repaints the form note — the choice is visible, not just stored
+    if (w.chipCount === 5) {
+      const cp = await ev(`() => { const c = document.querySelectorAll('#guestbook .gb-chip')[3];
+        c.scrollIntoView({ block: 'center' }); const r = c.getBoundingClientRect();
+        return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; }`);
+      await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: cp.x, y: cp.y, button: 'left', clickCount: 1 });
+      await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: cp.x, y: cp.y, button: 'left', clickCount: 1 });
+      await wait(320);
+      const after = await ev(readWall);
+      check('G9 chip click recolors the form note', after.paper === PAPER.peach && after.checked === 1,
+        JSON.stringify([after.paper, after.checked]));
+    } else check('G9 chip click recolors the form note', false, 'only ' + w.chipCount + ' chips');
+
+    // the counter tracks what the visitor actually typed
+    await ev(`() => { const t = document.querySelector('#guestbook .gb-form textarea'); t.focus(); }`);
+    await send('Input.insertText', { text: 'hello wall' });
+    await wait(120);
+    const typed = await ev(`() => ({ counter: document.querySelector('#guestbook .gb-count')?.textContent.trim() ?? null,
+      len: document.querySelector('#guestbook .gb-form textarea')?.value.length ?? null })`);
+    check('G9 counter counts the typed text', typed.len === 10 && /^10\s*\/\s*160$/.test(typed.counter || ''), JSON.stringify(typed));
+
+    if (w.note) {
+      check('G9 a note wears the paper it was pinned with', w.note.bg === PAPER[w.note.key], JSON.stringify([w.note.bg, w.note.key]));
+      check('G9 note ink is dark on the paper', w.note.ink === 'rgb(28, 25, 23)', 'color ' + w.note.ink);
+      check('G9 note body is handwritten', w.note.hand === true);
+      check('G9 note time is relative, not a raw timestamp', /^(just now|\d+[mhd]) ago|\w+ \d+$/.test(w.note.time || ''), JSON.stringify([w.note.time, w.note.dt]));
+      check('G9 note time carries a machine-readable datetime', /^\d{4}-\d{2}-\d{2}T/.test(w.note.dt || ''), w.note.dt);
+    } else console.log('  SKIP  G9 live note (no guestbook rows in DB)');
+    const moreMatch = w.more ? /Show more notes \((\d+)\)/.exec(w.more) : null;
+    if (moreMatch) check('G9 show-more counts the notes still hidden', +moreMatch[1] === w.total - w.shown, w.more + ' vs hidden ' + (w.total - w.shown));
+    else console.log('  SKIP  G9 show-more (fewer notes than one page)');
   } else {
     // reduced-motion pass
     // reduced-motion pass. Each one fails when the node is missing: a check that treats
