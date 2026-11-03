@@ -56,6 +56,7 @@ return [
   'about.skills_note'    => "Hover a word to see where I've used it. Click to pin.",
   'about.skills_updated' => 'always a work in progress · updated Oct 2026',
   'about.skills_tip'     => 'ask me about this one',
+  'about.skills_card_foot' => 'Click to pin · shot opens live',
   'about.toolkit_title'  => 'Toolkit',
   'about.toolkit_note'   => 'What I reach for daily.',
   'about.toolkit_sub'    => 'Go ahead, drag them.',
@@ -84,10 +85,24 @@ return [
   'certs.verify_btn' => 'Verify on Credly',
 
   'guest.kicker' => '05 Guestbook',
-  'guest.title'  => 'Say hi. 👋',
-  'guest.form_name' => 'Name',
-  'guest.form_msg'  => 'Message',
-  'guest.form_btn'  => 'Sign guestbook',
+  'guest.title'  => 'Leave your mark on the wall.',
+  'guest.lead'   => 'Stopped by? Pin a note for me and every other visitor. It shows up on the page for everyone.',
+  'guest.form_head'  => 'Leave a note',
+  'guest.form_ph'    => 'Say hi, share feedback, or drop a kind word…',
+  'guest.form_name'  => 'Your name (optional)',
+  'guest.form_color' => 'Note color',
+  'guest.form_btn'   => 'Pin it to the wall',
+  'guest.hint'       => 'Be kind. Notes are public and may be removed.',
+  'guest.empty'      => 'the wall is empty…',
+  'guest.empty_sub'  => 'Be the first to pin a note.',
+  'guest.more'       => 'Show more notes',
+  // The one place paper colors are decided. PHP validates a submitted color against these keys
+  // and paints each note from the value, so CSS never repeats the palette.
+  'guest.papers'     => ['lime' => '#E6FBA8', 'sky' => '#BAE6FD', 'pink' => '#FBCFE8', 'peach' => '#FED7AA', 'violet' => '#DDD6FE'],
+  'guest.paper_names' => ['lime' => 'Lime', 'sky' => 'Sky', 'pink' => 'Pink', 'peach' => 'Peach', 'violet' => 'Violet'],
+  'guest.max_note'   => 160,
+  'guest.max_name'   => 24,
+  'guest.page'       => 12,
 
   'contact.kicker' => '06 Contact',
   'contact.title'  => "Let's build something together.",
@@ -107,9 +122,11 @@ return [
   'contact.ok'  => 'Thanks %s! I got your message. I\'ll reply within 1 business day. 💚',
   'contact.err' => 'Please fill in Name, Email, and Message.',
 
-  'foot.nav_label' => 'Navigate:',
+  'foot.nav_label' => 'Navigate',
+  'foot.social_label' => 'Elsewhere',
+  'foot.description' => 'From first ideas to finished products, I build web and mobile experiences with care in %s.',
   'foot.rights'    => 'All rights reserved.',
-  'foot.tickle'    => 'psst, the letters are ticklish.',
+  'foot.tickle'    => 'Go on, give the letters a nudge.',
 
   'theme.title' => 'MAKE IT YOURS',
   'theme.note'  => 'saved for your next visit',
@@ -117,7 +134,8 @@ return [
   'stats' => [
     ['num' => '04', 'label' => 'Products shipped'],
     ['num' => '5+', 'label' => 'Years Exp'],
-    ['num' => '10+', 'label' => 'Personal Projects'],
+    ['num' => '12+', 'label' => 'Client Projects'],
+    ['num' => '15+', 'label' => 'Personal Projects'],
   ],
   'services' => ['Web applications','Mobile apps','Product design','Design systems','APIs & backends','UI engineering'],
   'skills' => [
@@ -127,5 +145,26 @@ return [
     ['Design','Figma / Design systems / UX','Interfaces, design systems and brand assets, considered end to end.','Figma'],
     ['Tooling','Git & GitHub / XAMPP / AI integrations','The everyday setup: version control, local servers, and AI in the loop.','AI integrations'],
   ],
-  'toolkit' => ['PHP','MySQL','JavaScript','Tailwind','Laravel','Flutter','Firebase','Git','Figma','XAMPP','CSS3','HTML5'],
+  'toolkit' => ['Next.js','React','TypeScript','Node.js','Tailwind CSS','Laravel','Flutter','Firebase','MySQL','Python','Vercel','Figma'],
+  // One line per skill word, shown in the card that opens when you hover that word.
+  // Key must match the word exactly as it is written in `skills` above.
+  'tech_notes' => [
+    'React'           => 'Component trees, hooks and state I can still reason about six months later.',
+    'PHP'             => 'The engine behind everything here — app logic, endpoints, and the templating this page runs on.',
+    'JavaScript'      => 'Vanilla-first interaction: reveal timing, drag, and the small springs that make the page feel physical.',
+    'Tailwind CSS'    => 'Utility styling when a design system already exists; I keep the config small.',
+    'CSS animations'  => 'Keyframes, transitions and individual transform properties — no animation library needed.',
+    'MySQL'           => 'Schemas that hold up: relations, indexes, and data I can migrate back out of.',
+    'Node.js'         => 'Tooling, scripts and small services that sit around the app rather than inside it.',
+    'Firebase'        => 'Auth, realtime reads and fast prototypes without standing up a server first.',
+    'Laravel'         => 'Routing, Eloquent and queues for when a project outgrows hand-rolled PHP.',
+    'Flutter'         => 'One codebase, two platforms, with the feel of native on both.',
+    'React Native'    => 'Logic shared with the web build, interface kept native.',
+    'Figma'           => 'Where the interface is decided — before a single line of code exists.',
+    'Design systems'  => 'Tokens, components and documented states, so the next screen is faster than the last.',
+    'UX'              => 'Flow first: the shortest honest path to the thing a visitor came for.',
+    'Git & GitHub'    => 'Branches, reviews and history a stranger can actually read.',
+    'XAMPP'           => 'The local stack this site is built on: Apache, PHP, MySQL.',
+    'AI integrations' => 'Model endpoints wired into real features, with a fallback for when they are wrong.',
+  ],
 ];

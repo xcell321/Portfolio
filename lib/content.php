@@ -20,11 +20,11 @@ function get_projects(?PDO $pdo): array {
 
 function get_timeline(?PDO $pdo): array {
   $fb = [
-    ['year'=>'Present','title'=>'Building the future','desc'=>'Continuing to learn and build digital products.'],
-    ['year'=>'2024','title'=>'Full stack expertise','desc'=>'Sharpened skills in PHP, MySQL, JS, and UI/UX.'],
-    ['year'=>'2023','title'=>'Professional growth','desc'=>'Joined a team; worked on large apps and databases.'],
-    ['year'=>'2022','title'=>'Expanded skills','desc'=>'Learned modern web development and freelancing.'],
-    ['year'=>'2021','title'=>'Started journey','desc'=>'Started with HTML, CSS, JavaScript.'],
+    ['year'=>'Present','title'=>'Building the future','desc'=>'Continuously learning and evolving. Focused on creating exceptional digital experiences and helping businesses reach their goals through technology.','tags'=>'AI,Security,Product'],
+    ['year'=>'2024','title'=>'Full stack expertise','desc'=>'Became proficient in full stack development, mobile apps with React Native, and UI/UX design. Took on more complex and challenging projects.','tags'=>'Full Stack,React Native,UI/UX'],
+    ['year'=>'2023','title'=>'Professional growth','desc'=>'Joined a development team, contributed to large-scale applications, and sharpened my skills in TypeScript, databases, and cloud services.','tags'=>'TypeScript,Databases,Cloud'],
+    ['year'=>'2022','title'=>'Expanded my skills','desc'=>'Learned React, Next.js, and backend development with Node.js. Started freelancing and delivered solutions for small businesses and startups.','tags'=>'React,Next.js,Node.js'],
+    ['year'=>'2021','title'=>'Started my journey','desc'=>'Began learning web development with HTML, CSS, and JavaScript. Built my first projects and found my passion for creating digital experiences.','tags'=>'HTML,CSS,JavaScript'],
   ];
   if (!$pdo) return $fb;
   try { $r = $pdo->query("SELECT * FROM timeline ORDER BY sort_order DESC")->fetchAll(); return $r ?: $fb; }
@@ -43,9 +43,9 @@ function get_certs(?PDO $pdo): array {
   catch (Exception $ex) { return $fb; }
 }
 
-function get_guestbook(?PDO $pdo, int $limit = 8): array {
+function get_guestbook(?PDO $pdo, int $limit = 24): array {
   if (!$pdo) return [];
-  try { return $pdo->query("SELECT * FROM guestbook ORDER BY id DESC LIMIT $limit")->fetchAll(); }
+  try { return $pdo->query("SELECT * FROM guestbook ORDER BY id DESC LIMIT " . (int)$limit)->fetchAll(); }
   catch (Exception $ex) { return []; }
 }
 
@@ -64,9 +64,9 @@ function save_message(?PDO $pdo, array $d): bool {
   } catch (Exception $ex) { return false; }
 }
 
-function save_guestbook(?PDO $pdo, string $name, string $msg): bool {
-  if (!$pdo || !$name || !$msg) return false;
-  try { $pdo->prepare("INSERT INTO guestbook(name,message) VALUES(?,?)")->execute([$name,$msg]); return true; }
+function save_guestbook(?PDO $pdo, string $name, string $msg, string $color = 'lime'): bool {
+  if (!$pdo || !$msg) return false;
+  try { $pdo->prepare("INSERT INTO guestbook(name,message,color) VALUES(?,?,?)")->execute([$name,$msg,$color]); return true; }
   catch (Exception $ex) { return false; }
 }
 

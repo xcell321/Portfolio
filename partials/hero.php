@@ -4,11 +4,13 @@ $statusHour  = (int)(new DateTime('now', new DateTimeZone('Asia/Manila')))->form
 $statusNow   = $statusLines[intdiv($statusHour, 6) % max(1, count($statusLines))] ?? ($statusLines[0] ?? 'BUILDING THINGS');
 ?>
 <header class="hero" id="top">
+  <div class="hero-decor" aria-hidden="true">
   <canvas id="heroDots" aria-hidden="true"></canvas>
   <div class="orb orb-1" aria-hidden="true"></div>
   <div class="orb orb-2" aria-hidden="true"></div>
   <div class="hero-vignette" aria-hidden="true"></div>
   <div class="hero-fade" aria-hidden="true"></div>
+  </div>
   <div class="wrap hero-inner">
   <!-- top meta row -->
   <div class="hero-meta">

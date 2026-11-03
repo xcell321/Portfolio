@@ -1,8 +1,5 @@
 <?php
 // Projects — sticky scrollytelling layout (ported from the "Selected work" design).
-$wk     = preg_split('/\s+/', trim((string)token('work.kicker')), 2);
-$knum   = $wk[0] ?? '';
-$klabel = $wk[1] ?? '';
 $slug   = function (string $t): string { return trim(strtolower(preg_replace('/[^a-z0-9]+/i', '-', $t)), '-'); };
 $domain = (string)token('work.preview_domain', 'example.com');
 
@@ -13,7 +10,7 @@ $pan = function (string $rel): array {
     $sz = @getimagesize($abs);
     if (!$sz || empty($sz[0]) || empty($sz[1])) return ['', ''];
     $p = -(1 - 0.625 * $sz[0] / $sz[1]) * 100;
-    $d = max(10, (720 * $sz[1] / $sz[0]) / 173);
+    $d = min(34, max(10, (720 * $sz[1] / $sz[0]) / 173));
     return [round($p, 3) . '%', round($d, 2) . 's'];
 };
 
@@ -40,9 +37,7 @@ $mock = function (array $p, string $ic, int $dur): string {
 <section id="projects" class="work-sec"><div class="wrap">
 
   <div class="work-head rv">
-    <div class="work-eyebrow">
-      <span class="mono acc"><?=e($knum)?></span><span class="rule"></span><span class="eyebrow"><?=e($klabel)?></span>
-    </div>
+    <?=eyebrow(token('work.kicker'))?>
     <div class="work-head-row">
       <div class="work-head-main">
         <h2 class="title"><?=split_title(token('work.title'), 2)?></h2>
@@ -64,20 +59,6 @@ $mock = function (array $p, string $ic, int $dur): string {
         $hm   = $mob !== '' && is_file(__DIR__ . '/../' . $mob);
         $dur  = 12 + $i * 3; ?>
       <article class="work-item<?=$i === 0 ? ' on' : ''?>" id="project-<?=e($sl)?>" data-index="<?=$i?>">
-
-        <div class="work-inline">
-          <div class="il-frame">
-            <div class="il-bar"><span class="il-dot"></span><span class="il-dot"></span><span class="il-dot"></span></div>
-            <div class="il-screen">
-              <?php if ($has): ?>
-              <img class="il-img" src="<?=e($img)?>" alt="<?=e($p['title'])?> preview" loading="lazy" decoding="async">
-              <?php else: ?><?=$mock($p, $ic, $dur)?><?php endif; ?>
-            </div>
-          </div>
-          <div class="il-phone">
-            <?php if ($hm): ?><img class="phone-img" src="<?=e($mob)?>" alt="<?=e($p['title'])?> — mobile preview" loading="lazy" decoding="async"><?php else: ?><?=icon($ic, 28)?><?php endif; ?>
-          </div>
-        </div>
 
         <div class="work-meta">
           <span class="mono acc"><?=e($num)?></span><span class="rule"></span>

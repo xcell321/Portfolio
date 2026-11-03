@@ -1,8 +1,5 @@
 <?php
 // About — intro, feature cards, skills, toolkit and a small terminal.
-$ak    = preg_split('/\s+/', trim((string)token('about.kicker')), 2);
-$aknum = $ak[0] ?? '';
-$aklab = $ak[1] ?? '';
 $tip   = (string)token('about.skills_tip');
 
 // Normalise skill rows: [name, "a / b / c", description, highlighted word]
@@ -15,6 +12,22 @@ foreach ((array)token('skills', []) as $r) {
     'desc'  => (string)($r[2] ?? ''),
     'tip'   => (string)($r[3] ?? ''),
   ];
+}
+
+// Hover-card payload: one entry per distinct tech word. The note is authored in tokens,
+// the shots are derived from project tags — nothing about a project is duplicated here.
+$skNotes = (array)token('tech_notes', []);
+$skCardData = [];
+foreach ($skRows as $r) {
+  foreach ($r['words'] as $w) {
+    $note  = (string)($skNotes[$w] ?? '');
+    $shots = tech_usage($w, $projects);
+    if ($note === '' && $shots === []) continue;
+    $skCardData[$w] = [
+      'note'  => $note,
+      'shots' => array_map(static fn(array $s): array => ['t' => $s['title'], 'i' => $s['img'], 'u' => $s['url']], $shots),
+    ];
+  }
 }
 
 // Terminal content is built here so it always matches the tokens and the DB.
@@ -63,7 +76,7 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
   <div class="about-head rv">
     <div class="about-head-main">
-      <div class="work-eyebrow"><span class="mono acc"><?=e($aknum)?></span><span class="rule"></span><span class="eyebrow"><?=e($aklab)?></span></div>
+      <?=eyebrow(token('about.kicker'))?>
       <h2 class="title"><?=split_title(token('about.title'), 3)?></h2>
       <p class="about-lead"><?=e(token('about.lead'))?></p>
     </div>
@@ -99,7 +112,7 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             <div class="sk-words">
               <?php foreach ($words as $wi => $w): ?>
                 <?php if ($wi): ?><span class="sk-sep" aria-hidden="true">/</span><?php endif; ?>
-                <button class="sk-word<?=($r['tip'] !== '' && $w === $r['tip']) ? ' has-tip' : ''?>" type="button" aria-expanded="false"><?=e($w)?><?php if ($r['tip'] !== '' && $w === $r['tip']): ?><span class="sk-tip" aria-hidden="true"><svg viewBox="0 0 24 20" fill="none"><path d="M22 3C14 3 6 7 4 17m0 0-3-4m3 4 4-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><?=e($tip)?></span><?php endif; ?></button>
+                <button class="sk-word<?=($r['tip'] !== '' && $w === $r['tip']) ? ' has-tip' : ''?>" type="button" data-tech="<?=e($w)?>" aria-expanded="false"><?=e($w)?><?php if ($r['tip'] !== '' && $w === $r['tip']): ?><span class="sk-tip" aria-hidden="true"><svg viewBox="0 0 24 20" fill="none"><path d="M22 3C14 3 6 7 4 17m0 0-3-4m3 4 4-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><?=e($tip)?></span><?php endif; ?></button>
               <?php endforeach; ?>
             </div>
           </div>
@@ -107,18 +120,28 @@ $termJson = json_encode($term, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
       </div>
       <?php endforeach; ?>
     </div>
+
+    <div class="sk-card" id="skCard" role="tooltip" aria-hidden="true">
+      <div class="sk-card-body">
+        <p class="sk-card-title"></p>
+        <p class="sk-card-note"></p>
+        <div class="sk-card-shots"></div>
+        <p class="sk-card-foot"><?=e(token('about.skills_card_foot'))?></p>
+      </div>
+    </div>
+    <script type="application/json" id="skCardData"><?=json_encode($skCardData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP)?></script>
   </div>
 
   <div class="kit-grid">
     <div class="kit-card kit-tools rv">
       <div class="kit-head">
         <div><p class="eyebrow"><?=e(token('about.toolkit_title'))?></p><p class="kit-note"><?=e(token('about.toolkit_note'))?> <span class="dim"><?=e(token('about.toolkit_sub'))?></span></p></div>
-        <button class="kit-tidy" type="button" onclick="tidyUp()" hidden><?=icon('rotate',14)?> <?=e(token('about.toolkit_tidy'))?></button>
+        <button class="kit-tidy" type="button" onclick="tidyUp()" aria-hidden="true" tabindex="-1"><?=icon('rotate',14)?> <?=e(token('about.toolkit_tidy'))?></button>
       </div>
       <div class="kit-arena" id="toolkit">
         <ul class="kit-chips">
           <?php
-          $slugs = ['PHP'=>'php','MySQL'=>'mysql','JavaScript'=>'javascript','Tailwind'=>'tailwindcss','Laravel'=>'laravel','Flutter'=>'flutter','Firebase'=>'firebase','Git'=>'git','Figma'=>'figma','XAMPP'=>'apache','CSS3'=>'css','HTML5'=>'html5'];
+          $slugs = ['Next.js'=>'nextdotjs','React'=>'react','TypeScript'=>'typescript','Node.js'=>'nodedotjs','Tailwind CSS'=>'tailwindcss','Laravel'=>'laravel','Flutter'=>'flutter','Firebase'=>'firebase','MySQL'=>'mysql','Python'=>'python','Vercel'=>'vercel','Figma'=>'figma'];
           foreach (token('toolkit', []) as $ti => $t): $slug = $slugs[$t] ?? ''; ?>
           <li class="tool" style="--i:<?=$ti?>"><?php if ($slug): ?><img src="https://cdn.simpleicons.org/<?=$slug?>/a8a29e" alt="" width="14" height="14" loading="lazy" onerror="this.remove()"> <?php endif; ?><?=e($t)?></li>
           <?php endforeach; ?>

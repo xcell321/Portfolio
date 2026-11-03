@@ -95,6 +95,25 @@ function ext(string $url): string {
 }
 
 /**
+ * How long ago a note was pinned, in the short form a note wall reads:
+ * just now, 5m ago, 3h ago, 12d ago, then a plain "Nov 3" once it is older than a month.
+ */
+function time_ago(string $when, ?int $now = null): string {
+  $ts = strtotime($when);
+  if ($ts === false) return '';
+  $now = $now ?? time();
+  $s = max(1, $now - $ts);
+  if ($s < 60) return 'just now';
+  $m = (int) round($s / 60);
+  if ($m < 60) return $m . 'm ago';
+  $h = (int) round($m / 60);
+  if ($h < 24) return $h . 'h ago';
+  $d = (int) round($h / 24);
+  if ($d < 30) return $d . 'd ago';
+  return date('M j', $ts);
+}
+
+/**
  * Two-tone section title:
  * first words plain, last N words dim (stone-500).
  * e.g. split_title('One partner, from concept to shipped release.', 3)
@@ -107,4 +126,42 @@ function split_title(string $text, int $words = 3): string {
   $head = implode(' ', array_slice($parts, 0, $n - $words));
   $tail = implode(' ', array_slice($parts, $n - $words));
   return e($head) . ' <span class="dim">' . e($tail) . '</span>';
+}
+
+/**
+ * Section marker: "04 CREDENTIALS" -> accent number, short rule, muted label.
+ * Every section eyebrow renders through this so the pattern lives in one place.
+ */
+function eyebrow(string $kicker, string $extra = ''): string {
+  $parts = preg_split('/\s+/', trim($kicker), 2);
+  $num = (count($parts) === 2 && preg_match('/^\d+$/', $parts[0] ?? '')) ? $parts[0] : '';
+  $label = $num !== '' ? $parts[1] : trim($kicker);
+  $cls = 'sec-eyebrow' . ($extra !== '' ? ' ' . $extra : '');
+  $out = '<div class="' . $cls . '">';
+  if ($num !== '') $out .= '<span class="mono acc">' . e($num) . '</span><span class="rule"></span>';
+  return $out . '<span class="eyebrow">' . e($label) . '</span></div>';
+}
+
+/**
+ * Which shipped projects used a given tech word — derived from project tags, never authored.
+ * Matching is exact and case-insensitive: the tag list is the contract. Containment was the
+ * first idea and it lied — "Tailwind CSS" matched a plain "CSS" tag and claimed a project
+ * used Tailwind. A word with no matching tag still gets its note, just no shots.
+ * Only rows with a real screenshot file come back.
+ *
+ * @return list<array{title:string, img:string, url:string}>
+ */
+function tech_usage(string $word, array $projects, int $max = 2): array {
+  $w = strtolower(trim($word));
+  if ($w === '') return [];
+  $out = [];
+  foreach ($projects as $p) {
+    $tags = array_map(static fn($t) => strtolower(trim($t)), explode(',', (string)($p['tags'] ?? '')));
+    if (!in_array($w, $tags, true)) continue;
+    $img = trim((string)($p['image'] ?? ''));
+    if ($img === '' || !is_file(__DIR__ . '/../' . $img)) continue;
+    $out[] = ['title' => (string)($p['title'] ?? ''), 'img' => $img, 'url' => trim((string)($p['live_url'] ?? ''))];
+    if (count($out) >= $max) break;
+  }
+  return $out;
 }
