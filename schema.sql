@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS projects (
   year VARCHAR(10) DEFAULT '',
   title VARCHAR(150) NOT NULL,
   `desc` TEXT,
+  long_desc TEXT,
   tags VARCHAR(255) DEFAULT '',
   live_url VARCHAR(255) DEFAULT '#',
   case_url VARCHAR(255) DEFAULT '#',
@@ -104,8 +105,9 @@ CREATE TABLE IF NOT EXISTS presence (
 --   php -r "echo password_hash('your-strong-password', PASSWORD_DEFAULT), PHP_EOL;"
 --   INSERT INTO admin_users (username,password_hash) VALUES ('admin','<paste-hash>');
 
-INSERT IGNORE INTO projects (num,role,year,title,`desc`,tags,live_url,emoji,image,image_mobile,sort_order) VALUES
-('01','Personal · Web App','2026','Remotee','A universal remote control for your home devices, built end to end with PHP, CSS and JavaScript.','PHP,MySQL,CSS,JavaScript','https://remotee.infinityfreeapp.com/','📱','assets/img/work/remotee.png','assets/img/work/remotee-mobile.png',1),
-('02','Freelance · Web App','2025','Project Beta','Add/edit via Admin > Projects.','PHP,JavaScript,CSS','#','📊','','',2),
-('03','Personal · UI/UX','2025','Project Gamma','All text is yours to edit.','Figma,PHP,MySQL','#','📝','','',3),
-('04','Client Work · Website','2024','Project Delta','Showcase for client work.','PHP,Bootstrap,MySQL','#','🏗️','','',4);
+INSERT IGNORE INTO projects (num,role,year,title,`desc`,long_desc,tags,live_url,emoji,image,image_mobile,sort_order) VALUES
+('01','Open Source · Developer Tooling','2026','reviewer-harness','One harness for every AI coding agent — guardrail rules and skills synced to 8 runtimes.','reviewer-harness is a zero-dependency Node.js CLI that writes anti-breakage rules, skills and prompts into each AI coding runtime''s native format. One config syncs 15 skills and 6 rules to Claude Code, OpenCode, Gemini CLI, Cline and four more, with a secret scan that blocks the sync if a key leaks.','Node.js,JavaScript,CSS,Vercel','https://reviewer-harness-landing.vercel.app/','🛡️','assets/img/work/reviewer-harness.webp','assets/img/work/reviewer-harness-mobile.webp',1),
+('02','Personal · Web App','2026','Remotee','A universal remote control for your home devices, built end to end with PHP, CSS and JavaScript.','Remotee consolidates control of the devices you use every day into a single browser-based remote. Setup, pairing, and command dispatch share one surface, backed by a PHP, MySQL, CSS, and JavaScript stack designed to stay fast, secure, and easy to maintain.','PHP,MySQL,CSS,JavaScript','https://remotee.infinityfreeapp.com/','📱','assets/img/work/remotee.png','assets/img/work/remotee-mobile.png',2),
+('03','Freelance · Web App','2025','Project Beta','Add/edit via Admin > Projects.','','PHP,JavaScript,CSS','#','📊','','',3),
+('04','Personal · UI/UX','2025','Project Gamma','All text is yours to edit.','','Figma,PHP,MySQL','#','📝','','',4),
+('05','Client Work · Website','2024','Project Delta','Showcase for client work.','','PHP,Bootstrap,MySQL','#','🏗️','','',5);

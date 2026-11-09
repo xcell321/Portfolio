@@ -1,4 +1,5 @@
 <?php
+$home = $home ?? '';
 $palNav = [
   ['id'=>'about','label'=>token('nav.about'),'keys'=>'about'],
   ['id'=>'projects','label'=>token('nav.work'),'keys'=>'work projects'],
@@ -24,7 +25,7 @@ $palSocials = [
       <h2 class="footer-heading" id="footerNavHeading"><?=e(token('foot.nav_label'))?></h2>
       <ul class="footer-links">
         <?php foreach ($palNav as $item): ?>
-        <li><a href="#<?=e($item['id'])?>"><?=e($item['label'])?></a></li>
+        <li><a href="<?=e($home)?>#<?=e($item['id'])?>"><?=e($item['label'])?></a></li>
         <?php endforeach; ?>
       </ul>
     </nav>
@@ -45,7 +46,13 @@ $palSocials = [
   ?>
   <div class="big tickle" id="bigName" aria-label="<?=e(strtoupper(token('owner_name')))?>"><?=$big_name?></div>
   <p class="footer-note"><?=e(token('foot.tickle'))?></p>
-  <div class="footer-bottom">© <?=date('Y')?> <?=e(token('owner_name'))?>. <?=e(token('foot.rights'))?></div>
+  <div class="footer-bottom">
+    <div>© <?=date('Y')?> <?=e(token('owner_name'))?>. <?=e(token('foot.rights'))?></div>
+    <div class="footer-actions">
+      <button class="pill like" id="likePillFoot" onclick="like(event)" data-sound="none" data-on="<?=e(token('like.on','You liked this'))?>" data-off="<?=e(token('like.off','Like this portfolio'))?>" title="Like" aria-label="<?=e(token('like.off','Like this portfolio'))?>" aria-pressed="false"><?=icon('heart',14)?> <span id="likeLabelFoot"><?=e(token('like.off','Like this portfolio'))?></span></button>
+      <a class="footer-top" href="#top"><?=e(token('foot.top','Back to top'))?> <?=icon('arrow_up',14)?></a>
+    </div>
+  </div>
 </div></footer>
 
 <div id="handPanel" class="hand-panel">
@@ -85,7 +92,8 @@ $aiIcons = [
 <div id="toast"></div>
 <script>
 const services=<?=json_encode(token('services', []))?>;
-document.getElementById('mq').innerHTML=(services.map(s=>`<li><span class="t">${s}</span><span class="sep">✦</span></li>`).join('')).repeat(4);
+const mq=document.getElementById('mq');
+if(mq)mq.innerHTML=(services.map(s=>`<li><span class="t">${s}</span><span class="sep">✦</span></li>`).join('')).repeat(4);
 </script>
 <?php
 $palProjects = [];
@@ -93,6 +101,7 @@ foreach ($projects as $p) {
   $palProjects[] = ['title'=>(string)($p['title'] ?? 'Project'),'year'=>(string)($p['year'] ?? ''),'tags'=>(string)($p['tags'] ?? '')];
 }
 $palData = [
+  'home'     => (string)$home,
   'email'    => (string)token('email'),
   'nav'      => $palNav,
   'projects' => $palProjects,
@@ -109,7 +118,7 @@ window.PAL_ICONS=<?=json_encode($palIcons, JSON_UNESCAPED_SLASHES|JSON_HEX_TAG|J
 window.AI_ICONS={open:<?=json_encode($aiIcons['circle'])?>,send:<?=json_encode($aiIcons['send'])?>,close:<?=json_encode($aiIcons['close'])?>};
 </script>
 <script src="assets/js/vendor/lenis.min.js?v=20261019a"></script>
-<script src="assets/js/main.js?v=20261103f"></script>
+<script src="assets/js/main.js?v=20261106c"></script>
 <script>
 // stub so the nav hand button doesn't ReferenceError while the ES module loads
 window.toggleHandTracking = window.toggleHandTracking || function () {
