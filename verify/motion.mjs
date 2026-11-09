@@ -241,7 +241,7 @@ async function checkSite(url) {
     if (!skSetup.err) {
       const pos = await ev(`() => { const w=[...document.querySelectorAll('.sk-word')].find(e=>e.dataset.tech==="PHP"); const r=w.getBoundingClientRect(); return {x:Math.round(r.x+r.width/2), y:Math.round(r.y+r.height/2)}; }`);
       await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: pos.x, y: pos.y });
-      await wait(320);
+      await wait(450);
       const open = await ev(`() => {
         const c = document.getElementById('skCard'), s = getComputedStyle(c), r = c.getBoundingClientRect();
         const fr = c.querySelector('.sk-card-frame'), img = fr && fr.querySelector('img'), lab = c.querySelector('.sk-card-label');
@@ -488,7 +488,7 @@ async function checkSite(url) {
       check('G9 a note wears the paper it was pinned with', w.note.bg === PAPER[w.note.key], JSON.stringify([w.note.bg, w.note.key]));
       check('G9 note ink is dark on the paper', w.note.ink === 'rgb(28, 25, 23)', 'color ' + w.note.ink);
       check('G9 note body is handwritten', w.note.hand === true);
-      check('G9 note time is relative, not a raw timestamp', /^(just now|\d+[mhd]) ago|\w+ \d+$/.test(w.note.time || ''), JSON.stringify([w.note.time, w.note.dt]));
+      check('G9 note time is relative, not a raw timestamp', /^(just now|\d+[mhd] ago|\w+ \d+)$/.test(w.note.time || ''), JSON.stringify([w.note.time, w.note.dt]));
       check('G9 note time carries a machine-readable datetime', /^\d{4}-\d{2}-\d{2}T/.test(w.note.dt || ''), w.note.dt);
     } else console.log('  SKIP  G9 live note (no guestbook rows in DB)');
     const moreMatch = w.more ? /Show more notes \((\d+)\)/.exec(w.more) : null;

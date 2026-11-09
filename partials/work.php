@@ -60,6 +60,20 @@ $mock = function (array $p, string $ic, int $dur): string {
         $dur  = 12 + $i * 3; ?>
       <article class="work-item<?=$i === 0 ? ' on' : ''?>" id="project-<?=e($sl)?>" data-index="<?=$i?>">
 
+        <div class="work-inline" aria-hidden="true">
+          <div class="il-frame">
+            <div class="il-bar"></div>
+            <div class="il-screen">
+              <?php if ($has): ?>
+              <img class="il-img" src="<?=e($img)?>" alt="<?=e($p['title'])?> preview" loading="lazy" decoding="async">
+              <?php else: ?><?=$mock($p, $ic, $dur)?><?php endif; ?>
+            </div>
+          </div>
+          <div class="il-phone">
+            <?php if ($hm): ?><img src="<?=e($mob)?>" alt="<?=e($p['title'])?> mobile preview" loading="lazy" decoding="async"><?php else: ?><?=icon($ic, 28)?><?php endif; ?>
+          </div>
+        </div>
+
         <div class="work-meta">
           <span class="mono acc"><?=e($num)?></span><span class="rule"></span>
           <span><?=e($p['role'] ?? '')?></span><span class="slash">/</span><span class="mono"><?=e($p['year'] ?? '')?></span>
@@ -71,7 +85,7 @@ $mock = function (array $p, string $ic, int $dur): string {
           <?php foreach (explode(',', $p['tags'] ?? '') as $tg): if (trim($tg)): ?><li class="tag"><?=e(trim($tg))?></li><?php endif; endforeach; ?>
         </ul>
         <div class="work-actions">
-          <a class="btn" <?=ext($p['case_url'] ?: '#')?>><?=e(token('work.case_btn'))?> <?=icon('arrow_right', 16)?></a>
+          <a class="btn" href="case-study.php?p=<?=e($sl)?>"><?=e(token('work.case_btn'))?> <?=icon('arrow_right', 16)?></a>
           <a class="btn ghost" <?=ext($p['live_url'] ?: '#')?>><?=e(token('work.live_btn'))?> <?=icon('arrow', 16)?></a>
         </div>
       </article>
@@ -85,7 +99,6 @@ $mock = function (array $p, string $ic, int $dur): string {
           <div class="stage">
             <div class="browser">
               <div class="chrome">
-                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
                 <div class="url"><span class="url-text"><?=e($slug((string)($projects[0]['title'] ?? '')).'.'.$domain)?></span></div>
               </div>
               <div class="screen">
